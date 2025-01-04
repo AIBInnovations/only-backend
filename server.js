@@ -3,11 +3,11 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
 
-import authRoutes from "../routes/authRoutes.js";
-import marketRoutes from "../routes/marketRoutes.js";
-import walletRoutes from "../routes/walletRoutes.js";
-import betRoutes from "../routes/betRoutes.js";
-import winRoutes from "../routes/winRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import marketRoutes from "./routes/marketRoutes.js";
+import walletRoutes from "./routes/walletRoutes.js";
+import betRoutes from "./routes/betRoutes.js";
+import winRoutes from "./routes/winRoutes.js";
 
 // Load environment variables
 dotenv.config();
