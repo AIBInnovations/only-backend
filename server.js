@@ -24,8 +24,7 @@ app.use(express.json());
 
 // Configure CORS for frontend communication
 const allowedOrigins = [
-  process.env.FRONTEND_URL?.trim() || 'http://localhost:5173', // Use .trim() to remove trailing spaces
-  'http://localhost:5174', // Add additional allowed origins here
+  process.env.FRONTEND_URL?.trim() || 'https://matka-betting-consumer-hazel.vercel.app'
 ];
 
 const corsOptions = {
