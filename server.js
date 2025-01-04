@@ -26,7 +26,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL?.trim() ||
     "https://matka-betting-consumer-hazel.vercel.app",
     "https://matka-betting-admin.vercel.app",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:5174"
 ];
 
 const corsOptions = {
