@@ -25,6 +25,7 @@ app.use(express.json());
 const allowedOrigins = [
   process.env.FRONTEND_URL?.trim() ||
     "https://matka-betting-consumer-hazel.vercel.app",
+    "https://matka-betting-admin.vercel.app",
     "http://localhost:5173"
 ];
 
