@@ -30,10 +30,10 @@ router.put('/users/:id/:walletbalance', adminAuth, updateUserWalletBalance);
 router.put('/bets/:id', adminAuth, editBet);
 
 /**
- * @route   PUT /api/admin/users/:userId/add-funds
- * @desc    Add funds to a user's wallet
+ * @route   POST /api/admin/users/add-funds
+ * @desc    Add funds to a user's wallet by admin
  * @access  Admin
  */
-router.put('/users/:userId/add-funds/:amount', adminAuth, addFundsByAdmin);
+router.post('/users/add-funds', adminAuth, addFundsByAdmin);
 
 export default router;

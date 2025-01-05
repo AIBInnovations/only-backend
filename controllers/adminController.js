@@ -43,35 +43,40 @@ export const editBet = async (req, res) => {
 };
 
 /**
- * @desc    Add funds to a user's wallet
- * @route   PUT /api/admin/users/:userId/add-funds
+ * @desc    Add funds to a user's wallet by email
+ * @route   PUT /api/admin/users/:email/add-funds/:amount
  * @access  Admin
  */
 export const addFundsByAdmin = async (req, res) => {
-  const { userId, amount } = req.params; // Extract amount from URL parameters
+  const { email, amount } = req.body; // Extract email and amount from request body
 
-  // Validate the input
-  if (!amount || isNaN(amount) || amount <= 0) {
-    console.error('Invalid amount:', amount);
-    return res.status(400).json({ message: 'Invalid amount. Amount must be a number greater than 0.' });
+  // Validate input
+  if (!email || !amount || amount <= 0) {
+    return res.status(400).json({ message: 'Invalid email or amount. Amount must be greater than 0.' });
+  }
+
+  // Validate email format
+  if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format.' });
   }
 
   try {
-    // Find the user by ID
-    const user = await User.findById(userId);
+    // Find the user by email (case-insensitive)
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: `User with email ${email} not found.` });
     }
 
-    // Safely add funds to the user's wallet
-    user.walletBalance = parseFloat(user.walletBalance) + parseFloat(amount);
+    // Add funds to the user's wallet
+    user.walletBalance += parseFloat(amount);
+    await user.save();
 
     // Create a new transaction record
     const transaction = new Transaction({
-      user: userId,
-      amount: parseFloat(amount),
-      transactionId: `ADMIN-${Date.now()}`, // Generate a unique transaction ID
-      receiptUrl: null, // Admin-added funds may not have a receipt
+      user: user._id,
+      amount,
+      transactionId: `ADMIN-${Date.now()}`,
+      receiptUrl: null,
       status: 'approved',
     });
 
@@ -91,3 +96,4 @@ export const addFundsByAdmin = async (req, res) => {
     res.status(500).json({ message: 'Server error while adding funds.' });
   }
 };
+;
