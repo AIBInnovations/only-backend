@@ -2,6 +2,7 @@ import express from 'express';
 import { getUsers } from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
+import { editBet } from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -25,5 +26,7 @@ router.put('/users/:id', adminAuth, updateUserDetails);
  * @access  Private (Admin)
  */
 router.put('/users/:id/:walletbalance', adminAuth, updateUserWalletBalance);
+
+router.put('/bets/:id', adminAuth, editBet);
 
 export default router;
