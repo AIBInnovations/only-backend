@@ -78,6 +78,7 @@ export const addFundsByAdmin = async (req, res) => {
       transactionId: `ADMIN-${Date.now()}`,
       receiptUrl: null,
       status: 'approved',
+      isSuccessful: true
     });
 
     await transaction.save();
