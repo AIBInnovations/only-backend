@@ -24,28 +24,5 @@ const auth = (req, res, next) => {
   }
 };
 
-const authadmin = async (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided. Authorization denied.' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded.id;
-
-    // Check if the user is an admin
-    const user = await User.findById(req.user);
-    if (!user || !user.isAdmin) {
-      return res.status(403).json({ message: 'Access denied. Admins only.' });
-    }
-
-    next();
-  } catch (error) {
-    console.error('Error verifying token:', error.message);
-    res.status(401).json({ message: 'Invalid token. Authorization denied.' });
-  }
-};
 
 export default auth;

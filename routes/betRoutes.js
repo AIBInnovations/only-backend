@@ -16,6 +16,6 @@ router.post('/place', auth, placeBet);
  * @desc    Fetch all bets placed by a specific user
  * @access  Private
  */
-router.get('/user/:userId', auth, getUserBets);
+router.get('/user/', auth, getUserBets);
 
 export default router;

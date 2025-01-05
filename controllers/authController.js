@@ -8,7 +8,8 @@ export const registerUser = async (req, res) => {
 
   try {
     // Validate input
-    if (!name || !email || !password || !phoneNumber) {
+    // if (!name || !email || !password || !phoneNumber) {
+    if (!name || !email || !password) {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
