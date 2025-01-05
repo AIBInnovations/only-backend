@@ -1,5 +1,6 @@
 import User from '../models/userModel.js';
 import Bet from '../models/betModel.js';
+import Market from '../models/marketModel.js';
 import Transaction from '../models/transactionModel.js';
 
 // Fetch all users
@@ -98,3 +99,40 @@ export const addFundsByAdmin = async (req, res) => {
   }
 };
 ;
+
+// Add a new market
+export const addMarket = async (req, res) => {
+  const { name, openTime, closeTime, isBettingOpen } = req.body;
+
+  // Validate input
+  if (!name || !openTime || !closeTime) {
+    return res.status(400).json({ message: 'Name, openTime, and closeTime are required.' });
+  }
+
+  try {
+    // Check if a market with the same name already exists
+    const existingMarket = await Market.findOne({ name });
+    if (existingMarket) {
+      return res.status(400).json({ message: 'Market with this name already exists.' });
+    }
+
+    // Generate a unique market ID
+    const marketId = `MKT-${Date.now()}`;
+
+    // Create a new market
+    const market = new Market({
+      name,
+      marketId, // Automatically set the market ID
+      openTime,
+      closeTime,
+      isBettingOpen: isBettingOpen !== undefined ? isBettingOpen : false, // Default to true if not provided
+    });
+
+    await market.save();
+
+    res.status(201).json({ message: 'Market added successfully', market });
+  } catch (error) {
+    console.error('Error adding market:', error.message);
+    res.status(500).json({ message: 'Server error while adding market.' });
+  }
+};
