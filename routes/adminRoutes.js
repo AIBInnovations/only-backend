@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUsers } from '../controllers/adminController.js';
+import { getUsers, addFundsByAdmin } from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
 import { editBet } from '../controllers/adminController.js';
@@ -28,5 +28,12 @@ router.put('/users/:id', adminAuth, updateUserDetails);
 router.put('/users/:id/:walletbalance', adminAuth, updateUserWalletBalance);
 
 router.put('/bets/:id', adminAuth, editBet);
+
+/**
+ * @route   PUT /api/admin/users/:userId/add-funds
+ * @desc    Add funds to a user's wallet
+ * @access  Admin
+ */
+router.put('/users/:userId/add-funds/:amount', adminAuth, addFundsByAdmin);
 
 export default router;
