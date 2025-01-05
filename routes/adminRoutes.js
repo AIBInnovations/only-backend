@@ -1,32 +1,29 @@
 import express from 'express';
-import auth from '../middleware/auth.js'; // Middleware for authentication
-import {
-  getUsers,
-  addUser,
-  updateUser,
-} from '../controllers/adminController.js'; // Controllers for user management
+import { getUsers } from '../controllers/adminController.js';
+import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
+import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
 
 const router = express.Router();
 
 /**
- * @route   GET /api/admin/users
- * @desc    Fetch all users
- * @access  Admin
+ * @route GET /api/admin/users
+ * @desc Fetch all users
+ * @access Admin only
  */
-router.get('/users', auth, getUsers);
-
-/**
- * @route   POST /api/admin/users
- * @desc    Add a new user
- * @access  Admin
- */
-router.post('/users', auth, addUser);
+router.get('/users', adminAuth, getUsers);
 
 /**
  * @route   PUT /api/admin/users/:id
  * @desc    Update user details
- * @access  Admin
+ * @access  Private (Admin)
  */
-router.put('/users/:id', auth, updateUser);
+router.put('/users/:id', adminAuth, updateUserDetails);
+
+/**
+ * @route   PUT /api/admin/users/:id/:walletbalance
+ * @desc    Update user wallet balance
+ * @access  Private (Admin)
+ */
+router.put('/users/:id/:walletbalance', adminAuth, updateUserWalletBalance);
 
 export default router;

@@ -7,10 +7,15 @@ export const registerUser = async (req, res) => {
   const { name, email, password, phoneNumber } = req.body;
 
   try {
+    // Validate input
+    if (!name || !email || !password || !phoneNumber) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+
     // Check if the user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ error: 'User already exists.' });
     }
 
     // Create and save the user (raw password will be hashed by pre('save'))
@@ -19,25 +24,25 @@ export const registerUser = async (req, res) => {
       email, 
       password, 
       phoneNumber, 
-      walletBalance: 0, // Initialize wallet balance
-      transactions: [], // Empty array for transactions
-      bets: [], // Empty array for bets
-      wins: [] // Empty array for wins
+      walletBalance: 0, 
+      transactions: [], 
+      bets: [], 
+      wins: [] 
     });
     await user.save();
 
     // Generate token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '250y' });
 
     // Respond with success
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'User registered successfully.',
       user: { id: user._id, name: user.name, email: user.email, phoneNumber: user.phoneNumber },
       token,
     });
   } catch (error) {
-    console.error('Registration Error:', error.message);
-    res.status(500).json({ error: 'Server error while registering user' });
+    console.error('Registration Error:', error);
+    res.status(500).json({ error: 'An unexpected error occurred during registration.' });
   }
 };
 
@@ -46,24 +51,29 @@ export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
     // Check if the user exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     // Compare the password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      return res.status(400).json({ error: 'Invalid credentials.' });
     }
 
     // Generate token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     // Respond with success
-    res.json({
-      message: 'Login successful',
+    res.status(200).json({
+      message: 'Login successful.',
       user: { 
         id: user._id, 
         name: user.name, 
@@ -74,12 +84,12 @@ export const loginUser = async (req, res) => {
       token,
     });
   } catch (error) {
-    console.error('Login Error:', error.message);
-    res.status(500).json({ error: 'Server error while logging in' });
+    console.error('Login Error:', error);
+    res.status(500).json({ error: 'An unexpected error occurred during login.' });
   }
 };
 
-// For fetching the details of the user
+// Fetch user details
 export const getUserDetails = async (req, res) => {
   try {
     // Fetch user by ID from `req.user` (set by the auth middleware)
@@ -90,7 +100,7 @@ export const getUserDetails = async (req, res) => {
       .select('-password');     // Exclude password from response
 
     if (!user) {
-      return res.status(404).json({ msg: 'User not found.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     // Return the user details
@@ -105,7 +115,7 @@ export const getUserDetails = async (req, res) => {
       wins: user.wins,
     });
   } catch (error) {
-    console.error('Error fetching user details:', error.message);
-    res.status(500).json({ msg: 'Server error while fetching user details.' });
+    console.error('Error fetching user details:', error);
+    res.status(500).json({ error: 'An unexpected error occurred while fetching user details.' });
   }
 };

@@ -8,6 +8,8 @@ import marketRoutes from "./routes/marketRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import betRoutes from "./routes/betRoutes.js";
 import winRoutes from "./routes/winRoutes.js";
+import adminAuthRoutes from "./routes/adminAuthRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -50,6 +52,8 @@ app.use("/api/markets", marketRoutes); // Market routes
 app.use("/api/wallet", walletRoutes); // Wallet routes
 app.use("/api/bets", betRoutes); // Bets routes
 app.use("/api/wins", winRoutes); // Wins routes
+app.use('/api/admin', adminAuthRoutes); //Admin Auth routes
+app.use("/api/admin", adminRoutes); //Admin routes
 
 // Test API route
 app.get("/", (req, res) => {
