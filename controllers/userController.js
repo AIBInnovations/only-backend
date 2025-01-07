@@ -3,12 +3,12 @@ import User from '../models/userModel.js';
 // Update user details
 export const updateUserDetails = async (req, res) => {
   const { id } = req.params;
-  const { name, email, phoneNumber, walletbalance } = req.body;
+  const { name, email, phoneNumber, walletBalance } = req.body;
 
   try {
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      { name, email, phoneNumber, walletbalance },
+      { name, email, phoneNumber, walletBalance },
       { new: true, runValidators: true } // Return the updated user and run validation
     );
 
