@@ -40,7 +40,7 @@ const corsOptions = {
       callback(new Error("Not allowed by CORS"));
     }
   },
-  methods: ["GET", "POST"], // Restrict to necessary methods
+  methods: ["GET", "POST", "PUT", "DELETE"], // Restrict to necessary methods
   allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
 };
 
