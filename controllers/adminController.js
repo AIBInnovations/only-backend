@@ -136,3 +136,75 @@ export const addMarket = async (req, res) => {
     res.status(500).json({ message: 'Server error while adding market.' });
   }
 };
+
+
+export const declareResult = async (req, res) => {
+  const { marketId } = req.params;
+  const { gameName, result } = req.body;
+
+  if (!marketId || !gameName || result === undefined) {
+    return res.status(400).json({ message: 'Market ID, game name, and result are required.' });
+  }
+
+  try {
+    // Fetch the market
+    const market = await Market.findOne({ marketId });
+    if (!market) {
+      return res.status(404).json({ message: 'Market not found.' });
+    }
+
+    // Update the result in the market
+    market.results.set(gameName, result);
+    await market.save();
+
+    // Fetch all bets for this market and game name
+    const bets = await Bet.find({ marketName: market.name, gameName });
+
+    if (bets.length === 0) {
+      return res.status(404).json({ message: 'No bets found for this game name.' });
+    }
+
+    const winners = [];
+    let totalRewards = 0;
+
+    // Process each bet
+    for (const bet of bets) {
+      if (bet.number === parseInt(result, 10)) {
+        // Bet won
+        const reward = bet.amount * bet.winningRatio;
+        totalRewards += reward;
+
+        // Fetch the user and update their wallet balance
+        const user = await User.findById(bet.user);
+        if (user) {
+          user.walletBalance += reward;
+          await user.save();
+
+          winners.push({
+            userId: user._id,
+            name: user.name,
+            reward,
+          });
+        }
+
+        bet.status = 'won';
+      } else {
+        // Bet lost
+        bet.status = 'lost';
+      }
+
+      // Save the updated bet
+      await bet.save();
+    }
+
+    res.status(200).json({
+      message: `Result declared for ${gameName} in market ${market.name}.`,
+      result,
+      totalRewards,
+      winners,
+    });
+  } catch (error) {
+    console.error('Error declaring result:', error.message);
+    res.status(500).json({ message: 'Server error while declaring result.' });
+  }
+};

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUsers, addFundsByAdmin, editBet, addMarket } from '../controllers/adminController.js';
+import { getUsers, addFundsByAdmin, editBet, addMarket, declareResult } from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
 
@@ -41,5 +41,12 @@ router.post('/users/add-funds', adminAuth, addFundsByAdmin);
  * @access  Admin
  */
 router.post('/add-market', adminAuth, addMarket);
+
+/**
+ * @route   PUT /api/admin/markets/:marketId/result
+ * @desc    Declare result for a market and reward winners
+ * @access  Admin
+ */
+router.put('/markets/:marketId/result', adminAuth, declareResult);
 
 export default router;
