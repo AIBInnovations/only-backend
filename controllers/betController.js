@@ -3,12 +3,17 @@ import User from '../models/userModel.js';
 
 // Place a bet
 export const placeBet = async (req, res) => {
-  const { marketName, gameName, number, amount, winningRatio } = req.body;
+  const { marketName, gameName, number, amount, winningRatio, betType } = req.body;
   const userId = req.user;
 
   // Validate input
-  if (!userId || !marketName || !gameName || number == null || !amount || !winningRatio) {    
+  if (!userId || !marketName || !gameName || number == null || !amount || !winningRatio || !betType) {
     return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  // Validate betType
+  if (!['Open', 'Close'].includes(betType)) {
+    return res.status(400).json({ message: 'Invalid bet type. Must be "Open" or "Close".' });
   }
 
   try {
@@ -31,6 +36,7 @@ export const placeBet = async (req, res) => {
       number,
       amount,
       winningRatio,
+      betType, // Include bet type in the bet
     });
     await bet.save();
 
@@ -64,4 +70,3 @@ export const getUserBets = async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching bets' });
   }
 };
-

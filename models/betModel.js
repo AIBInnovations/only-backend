@@ -5,53 +5,52 @@ const betSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true, // Links the bet to a user
+      required: true,
     },
     marketName: {
       type: String,
-      required: true, // Name of the market the bet belongs to
+      required: true,
     },
     gameName: {
       type: String,
-      required: true, // Name of the game (e.g., Single Digit, Jodi, etc.)
+      required: true,
     },
     number: {
       type: Number,
-      required: true, // The number the user placed a bet on
+      required: true,
     },
     amount: {
       type: Number,
       required: true,
-      min: [1, 'Bet amount must be at least 1'], // Minimum bet validation
+      min: [1, 'Bet amount must be at least 1'],
     },
     winningRatio: {
       type: Number,
-      required: true, // Specifies the ratio for winnings
+      required: true,
+    },
+    betType: {
+      type: String,
+      enum: ['Open', 'Close'], // Only allow 'Open' or 'Close'
+      required: true,
     },
     status: {
       type: String,
-      enum: ['pending', 'won', 'lost'], // Tracks bet result
+      enum: ['pending', 'won', 'lost'],
       default: 'pending',
     },
     createdAt: {
       type: Date,
-      default: Date.now, // When the bet was placed
+      default: Date.now,
     },
     updatedAt: {
       type: Date,
-      default: Date.now, // Last update
+      default: Date.now,
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt automatically
+    timestamps: true,
   }
 );
-
-// Middleware to auto-update 'updatedAt' on save
-betSchema.pre('save', function (next) {
-  this.updatedAt = Date.now();
-  next();
-});
 
 const Bet = mongoose.models.Bet || mongoose.model('Bet', betSchema);
 
