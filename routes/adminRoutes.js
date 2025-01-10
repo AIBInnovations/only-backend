@@ -56,7 +56,7 @@ router.put('/markets/:marketId/result', adminAuth, declareResult);
  * @desc    Fetch all admins (Only Master Admin can access this)
  * @access  Private (Master Admin only)
  */
-router.get('/admins', adminAuth, getAdmins);
+router.get('/admins', getAdmins);
 
 /**
  * @route   GET /api/admin/transactions
