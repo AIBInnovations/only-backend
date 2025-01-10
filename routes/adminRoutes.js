@@ -2,8 +2,6 @@ import express from 'express';
 import { getUsers, addFundsByAdmin, editBet, addMarket, declareResult, getAdmins, getAllTransactions} from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
-import hardCodedMasterAdminAuth from '../middleware/hardCodedMasterAdminAuth.js'; // Custom middleware for hardcoded Master Admin authentication
-
 
 const router = express.Router();
 
