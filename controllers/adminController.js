@@ -2,6 +2,8 @@ import User from '../models/userModel.js';
 import Bet from '../models/betModel.js';
 import Market from '../models/marketModel.js';
 import Transaction from '../models/transactionModel.js';
+import Admin from '../models/adminModel.js'; // Ensure the path is correct
+
 
 // Fetch all users
 export const getUsers = async (req, res) => {
@@ -206,5 +208,26 @@ export const declareResult = async (req, res) => {
   } catch (error) {
     console.error('Error declaring result:', error.message);
     res.status(500).json({ message: 'Server error while declaring result.' });
+  }
+};
+
+/**
+ * @desc Fetch all admins
+ * @route GET /api/admin/admins
+ * @access Private (Master Admin only)
+ */
+export const getAdmins = async (req, res) => {
+  try {
+    // Fetch all admins excluding sensitive fields like password
+    const admins = await Admin.find().select('-password');
+
+    if (!admins.length) {
+      return res.status(404).json({ message: 'No admins found' });
+    }
+
+    res.status(200).json({ message: 'Admins fetched successfully', admins });
+  } catch (error) {
+    console.error('Error fetching admins:', error.message);
+    res.status(500).json({ message: 'Server error while fetching admins' });
   }
 };

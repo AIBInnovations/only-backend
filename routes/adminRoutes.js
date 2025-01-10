@@ -1,7 +1,9 @@
 import express from 'express';
-import { getUsers, addFundsByAdmin, editBet, addMarket, declareResult } from '../controllers/adminController.js';
+import { getUsers, addFundsByAdmin, editBet, addMarket, declareResult, getAdmins } from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
+import hardCodedMasterAdminAuth from '../middleware/hardCodedMasterAdminAuth.js'; // Custom middleware for hardcoded Master Admin authentication
+
 
 const router = express.Router();
 
@@ -48,5 +50,12 @@ router.post('/add-market', adminAuth, addMarket);
  * @access  Admin
  */
 router.put('/markets/:marketId/result', adminAuth, declareResult);
+
+/**
+ * @route   GET /api/admin/admins
+ * @desc    Fetch all admins (Only Master Admin can access this)
+ * @access  Private (Master Admin only)
+ */
+router.get('/admins', hardCodedMasterAdminAuth, getAdmins);
 
 export default router;
