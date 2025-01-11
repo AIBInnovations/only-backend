@@ -252,3 +252,51 @@ export const getAllTransactions = async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching transactions' });
   }
 };
+
+// Fetch all bets
+export const getAllBets = async (req, res) => {
+  try {
+    const bets = await Bet.find()
+      .populate('user', 'name email') // Populate user details (e.g., name and email)
+      .sort({ createdAt: -1 }); // Sort bets by most recent
+
+    if (!bets.length) {
+      return res.status(404).json({ message: 'No bets found' });
+    }
+
+    res.status(200).json({
+      message: 'Bets fetched successfully',
+      bets,
+    });
+  } catch (error) {
+    console.error('Error fetching bets:', error.message);
+    res.status(500).json({ message: 'Server error while fetching bets' });
+  }
+};
+
+// Edit a market by marketId
+export const editMarket = async (req, res) => {
+  const { marketId } = req.params;
+  const { name, openTime, closeTime, isBettingOpen } = req.body;
+
+  try {
+    // Find the market using marketId instead of _id
+    const updatedMarket = await Market.findOneAndUpdate(
+      { marketId }, // Match using marketId
+      { name, openTime, closeTime, isBettingOpen }, // Update fields
+      { new: true, runValidators: true } // Return updated document and validate input
+    );
+
+    if (!updatedMarket) {
+      return res.status(404).json({ message: 'Market not found' });
+    }
+
+    res.status(200).json({
+      message: 'Market updated successfully',
+      market: updatedMarket,
+    });
+  } catch (error) {
+    console.error('Error updating market:', error.message);
+    res.status(500).json({ message: 'Server error while updating market' });
+  }
+};
