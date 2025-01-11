@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUsers, addFundsByAdmin, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket} from '../controllers/adminController.js';
+import { getUsers, addFundsByAdmin, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser} from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
 
@@ -76,5 +76,14 @@ router.get('/bets', adminAuth, getAllBets);
  * @access  Admin
  */
 router.put('/markets/:marketId', adminAuth, editMarket);
+
+// Delete a market
+router.delete('/markets/:marketId', adminAuth, deleteMarket);
+
+// Delete a bet
+router.delete('/bets/:id', adminAuth, deleteBet);
+
+// Delete a user
+router.delete('/users/:userId', adminAuth, deleteUser);
 
 export default router;

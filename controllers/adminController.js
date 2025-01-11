@@ -300,3 +300,66 @@ export const editMarket = async (req, res) => {
     res.status(500).json({ message: 'Server error while updating market' });
   }
 };
+
+// Delete Market
+export const deleteMarket = async (req, res) => {
+  const { marketId } = req.params;
+
+  try {
+    const deletedMarket = await Market.findOneAndDelete({ marketId });
+
+    if (!deletedMarket) {
+      return res.status(404).json({ message: 'Market not found' });
+    }
+
+    res.status(200).json({
+      message: 'Market deleted successfully',
+      market: deletedMarket,
+    });
+  } catch (error) {
+    console.error('Error deleting market:', error.message);
+    res.status(500).json({ message: 'Server error while deleting market' });
+  }
+};
+
+//Delete Bet
+export const deleteBet = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedBet = await Bet.findByIdAndDelete(id);
+
+    if (!deletedBet) {
+      return res.status(404).json({ message: 'Bet not found' });
+    }
+
+    res.status(200).json({
+      message: 'Bet deleted successfully',
+      bet: deletedBet,
+    });
+  } catch (error) {
+    console.error('Error deleting bet:', error.message);
+    res.status(500).json({ message: 'Server error while deleting bet' });
+  }
+};
+
+// Delete User
+export const deleteUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'User deleted successfully',
+      user: deletedUser,
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error.message);
+    res.status(500).json({ message: 'Server error while deleting user' });
+  }
+};
