@@ -50,7 +50,7 @@ export const editBet = async (req, res) => {
  * @route   PUT /api/admin/users/:email/add-funds/:amount
  * @access  Admin
  */
-export const addFundsByAdmin = async (req, res) => {
+/**export const addFundsByAdmin = async (req, res) => {
   const { email, amount } = req.body; // Extract email and amount from request body
 
   // Validate input
@@ -100,7 +100,7 @@ export const addFundsByAdmin = async (req, res) => {
     res.status(500).json({ message: 'Server error while adding funds.' });
   }
 };
-;
+**/
 
 // Add a new market
 export const addMarket = async (req, res) => {

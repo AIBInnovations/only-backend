@@ -1,7 +1,7 @@
 import express from 'express';
-import { getUsers, addFundsByAdmin, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser} from '../controllers/adminController.js';
+import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser} from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
-import { updateUserDetails, updateUserWalletBalance } from '../controllers/userController.js';
+import { updateUserDetails } from '../controllers/userController.js';
 
 const router = express.Router();
 
@@ -24,7 +24,6 @@ router.put('/users/:id', adminAuth, updateUserDetails);
  * @desc    Update user wallet balance
  * @access  Private (Admin)
  */
-router.put('/users/:id/:walletbalance', adminAuth, updateUserWalletBalance);
 
 router.put('/bets/:id', adminAuth, editBet);
 
@@ -32,8 +31,8 @@ router.put('/bets/:id', adminAuth, editBet);
  * @route   POST /api/admin/users/add-funds
  * @desc    Add funds to a user's wallet by admin
  * @access  Admin
- */
 router.post('/users/add-funds', adminAuth, addFundsByAdmin);
+**/
 
 /**
  * @route   POST /api/admin/markets
