@@ -3,6 +3,7 @@ import Bet from '../models/betModel.js';
 import Market from '../models/marketModel.js';
 import Transaction from '../models/transactionModel.js';
 import Admin from '../models/adminModel.js'; // Ensure the path is correct
+import WinningRatio from '../models/winningRatioModel.js';
 
 
 // Fetch all users
@@ -141,73 +142,44 @@ export const addMarket = async (req, res) => {
 
 
 export const declareResult = async (req, res) => {
-  const { marketId } = req.params;
-  const { gameName, result } = req.body;
-
-  if (!marketId || !gameName || result === undefined) {
-    return res.status(400).json({ message: 'Market ID, game name, and result are required.' });
-  }
+  const { marketName, gameName, winningNumber } = req.body;
 
   try {
-    // Fetch the market
-    const market = await Market.findOne({ marketId });
-    if (!market) {
-      return res.status(404).json({ message: 'Market not found.' });
+    // Fetch the winning ratio for the game
+    const winningRatioDoc = await WinningRatio.findOne({ gameName });
+    if (!winningRatioDoc) {
+      return res.status(404).json({ message: `Winning ratio not defined for game: ${gameName}` });
     }
 
-    // Update the result in the market
-    market.results.set(gameName, result);
-    await market.save();
+    const winningRatio = winningRatioDoc.ratio;
 
-    // Fetch all bets for this market and game name
-    const bets = await Bet.find({ marketName: market.name, gameName });
+    // Fetch bets matching the criteria
+    const bets = await Bet.find({ marketName, gameName, number: winningNumber });
 
-    if (bets.length === 0) {
-      return res.status(404).json({ message: 'No bets found for this game name.' });
-    }
-
-    const winners = [];
-    let totalRewards = 0;
-
-    // Process each bet
+    // Process rewards for each winning bet
     for (const bet of bets) {
-      if (bet.number === parseInt(result, 10)) {
-        // Bet won
-        const reward = bet.amount * bet.winningRatio;
-        totalRewards += reward;
+      const user = await User.findById(bet.user);
+      if (!user) continue;
 
-        // Fetch the user and update their wallet balance
-        const user = await User.findById(bet.user);
-        if (user) {
-          user.walletBalance += reward;
-          await user.save();
+      const reward = bet.amount * winningRatio;
+      user.walletBalance += reward;
+      await user.save();
 
-          winners.push({
-            userId: user._id,
-            name: user.name,
-            reward,
-          });
-        }
-
-        bet.status = 'won';
-      } else {
-        // Bet lost
-        bet.status = 'lost';
-      }
-
-      // Save the updated bet
+      // Update bet status
+      bet.status = 'won';
       await bet.save();
     }
 
-    res.status(200).json({
-      message: `Result declared for ${gameName} in market ${market.name}.`,
-      result,
-      totalRewards,
-      winners,
-    });
+    // Mark all losing bets
+    await Bet.updateMany(
+      { marketName, gameName, number: { $ne: winningNumber } },
+      { status: 'lost' }
+    );
+
+    res.status(200).json({ message: 'Results declared successfully' });
   } catch (error) {
-    console.error('Error declaring result:', error.message);
-    res.status(500).json({ message: 'Server error while declaring result.' });
+    console.error('Error declaring results:', error.message);
+    res.status(500).json({ message: 'Server error while declaring results' });
   }
 };
 
@@ -298,6 +270,44 @@ export const editMarket = async (req, res) => {
   } catch (error) {
     console.error('Error updating market:', error.message);
     res.status(500).json({ message: 'Server error while updating market' });
+  }
+};
+
+
+export const getAllWinningRatios = async (req, res) => {
+  try {
+    const winningRatios = await WinningRatio.find();
+    res.status(200).json({ winningRatios });
+  } catch (error) {
+    console.error('Error fetching winning ratios:', error.message);
+    res.status(500).json({ message: 'Server error while fetching winning ratios' });
+  }
+};
+
+
+export const updateWinningRatio = async (req, res) => {
+  const { id } = req.params;
+  const { ratio } = req.body;
+
+  if (!ratio || ratio < 1) {
+    return res.status(400).json({ message: 'Invalid ratio value' });
+  }
+
+  try {
+    const updatedRatio = await WinningRatio.findByIdAndUpdate(
+      id,
+      { ratio },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedRatio) {
+      return res.status(404).json({ message: 'Winning ratio not found' });
+    }
+
+    res.status(200).json({ message: 'Winning ratio updated successfully', winningRatio: updatedRatio });
+  } catch (error) {
+    console.error('Error updating winning ratio:', error.message);
+    res.status(500).json({ message: 'Server error while updating winning ratio' });
   }
 };
 
