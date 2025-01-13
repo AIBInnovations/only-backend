@@ -42,11 +42,11 @@ router.post('/users/add-funds', adminAuth, addFundsByAdmin);
 router.post('/add-market', adminAuth, addMarket);
 
 /**
- * @route   PUT /api/admin/markets/:marketId/result
- * @desc    Declare result for a market and reward winners
+ * @route   POST /api/admin/markets/declare-results
+ * @desc    Declare results for a market
  * @access  Admin
  */
-router.put('/markets/:marketId/result', adminAuth, declareResult);
+router.post('/markets/declare-results', adminAuth, declareResult);
 
 /**
  * @route   GET /api/admin/admins

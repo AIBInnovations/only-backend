@@ -25,9 +25,11 @@ const marketSchema = new mongoose.Schema({
     default: false,
   },
   results: {
-    type: Map,
-    of: String, // Store results for different game types
-    default: {},
+    openNumber: String,
+    closeNumber: String,
+    openSingleDigit: Number,
+    closeSingleDigit: Number,
+    jodiResult: String,
   },
 }, {
   timestamps: true,
