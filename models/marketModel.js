@@ -30,6 +30,8 @@ const marketSchema = new mongoose.Schema({
     openSingleDigit: Number,
     closeSingleDigit: Number,
     jodiResult: String,
+    openSinglePanna: String,
+    closeSinglePanna: String
   },
 }, {
   timestamps: true,
