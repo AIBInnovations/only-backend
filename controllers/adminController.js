@@ -141,7 +141,6 @@ export const addMarket = async (req, res) => {
 };
 
 
-// Declare Result
 export const declareResult = async (req, res) => {
   const { marketId, openResult, closeResult } = req.body;
 
@@ -150,42 +149,49 @@ export const declareResult = async (req, res) => {
   }
 
   try {
-    // If using a custom marketId, use findOne instead of findById
+    console.log('Market ID:', marketId);
+
+    // Find the market by marketId
     const market = await Market.findOne({ marketId });
+    console.log('Market found:', market);
 
     if (!market) {
       return res.status(404).json({ message: 'Market not found.' });
     }
 
     // Parse Open and Close Results
-    const openDigits = openResult.split('').map(Number); // Split '580' -> [5, 8, 0]
-    const closeDigits = closeResult.split('').map(Number); // Split '190' -> [1, 9, 0]
+    const openDigits = openResult.split('').map(Number);
+    const closeDigits = closeResult.split('').map(Number);
 
     // Calculate Single Digit Results
-    const openSingleDigit = openDigits.reduce((sum, digit) => sum + digit, 0) % 10; // Last digit of sum
-    const closeSingleDigit = closeDigits.reduce((sum, digit) => sum + digit, 0) % 10; // Last digit of sum
+    const openSingleDigit = openDigits.reduce((sum, digit) => sum + digit, 0) % 10;
+    const closeSingleDigit = closeDigits.reduce((sum, digit) => sum + digit, 0) % 10;
 
     // Calculate Jodi Result
     const jodiResult = `${openSingleDigit}${closeSingleDigit}`;
 
-    // Set Single Panna Results
+    // Calculate Single Panna Results
     const openSinglePanna = openResult; // Open Single Panna is the open result (e.g., '580')
     const closeSinglePanna = closeResult; // Close Single Panna is the close result (e.g., '190')
 
-    // Update the market with the declared results
-    market.openResult = openResult;
-    market.closeResult = closeResult;
-    market.openSingleDigit = openSingleDigit;
-    market.closeSingleDigit = closeSingleDigit;
-    market.jodiResult = jodiResult;
-    market.openSinglePanna = openSinglePanna;
-    market.closeSinglePanna = closeSinglePanna;
-    market.isBettingOpen = false; // Close the betting after result declaration
+    // Update the results object within the market
+    market.results = {
+      openNumber: openResult,
+      closeNumber: closeResult,
+      openSingleDigit,
+      closeSingleDigit,
+      jodiResult,
+      openSinglePanna,
+      closeSinglePanna,
+    };
+    market.isBettingOpen = false; // Close betting after result declaration
 
     await market.save();
+    console.log('Market results updated successfully:', market);
 
     // Reward the winning users
     const winningBets = await Bet.find({ marketName: market.name, status: 'pending' });
+    console.log('Winning bets fetched:', winningBets.length);
 
     for (const bet of winningBets) {
       let isWinner = false;
