@@ -69,7 +69,7 @@ router.get('/transactions', adminAuth, getAllTransactions);
  */
 router.get('/bets', adminAuth, getAllBets);
 
-router.get('/winning-ratios', adminAuth, getAllWinningRatios);
+router.get('/winning-ratios', getAllWinningRatios);
 
 router.put('/winning-ratios/:id', adminAuth, updateWinningRatio);
 
