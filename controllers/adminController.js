@@ -151,6 +151,7 @@ export const declareResult = async (req, res) => {
   try {
     console.log('📢 Market ID:', marketId);
 
+    // Find the market by marketId
     const market = await Market.findOne({ marketId });
 
     if (!market) {
@@ -214,8 +215,8 @@ export const declareResult = async (req, res) => {
           const isDoublePanna = (digits) => 
             digits.length === 3 &&
             ((digits[0] === digits[1] && digits[0] !== digits[2]) ||
-            (digits[0] === digits[2] && digits[0] !== digits[1]) ||
-            (digits[1] === digits[2] && digits[0] !== digits[1]));
+             (digits[0] === digits[2] && digits[0] !== digits[1]) ||
+             (digits[1] === digits[2] && digits[0] !== digits[1]));
 
           isWinner = (bet.betType === 'Open' && isDoublePanna(doubleBetDigits) && doubleBetDigits.join('') === openSinglePanna) ||
                      (bet.betType === 'Close' && isDoublePanna(doubleBetDigits) && doubleBetDigits.join('') === closeSinglePanna);
@@ -223,7 +224,8 @@ export const declareResult = async (req, res) => {
 
         case 'Triple Panna':
           const tripleBetDigits = String(bet.number).split('').map(Number);
-          const isTriplePanna = (digits) => digits.length === 3 && digits.every((digit) => digit === digits[0]);
+          const isTriplePanna = (digits) => 
+            digits.length === 3 && digits.every((digit) => digit === digits[0]);
 
           isWinner = (bet.betType === 'Open' && isTriplePanna(tripleBetDigits) && tripleBetDigits.join('') === openSinglePanna) ||
                      (bet.betType === 'Close' && isTriplePanna(tripleBetDigits) && tripleBetDigits.join('') === closeSinglePanna);
@@ -233,7 +235,9 @@ export const declareResult = async (req, res) => {
           break;
       }
 
-      console.log(`🔎 Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`);
+      console.log(
+        `🔎 Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`
+      );
 
       if (isWinner) {
         const reward = bet.amount * bet.winningRatio;
@@ -261,7 +265,6 @@ export const declareResult = async (req, res) => {
     res.status(500).json({ message: 'Server error while declaring result.' });
   }
 };
-
 
 
 /**
