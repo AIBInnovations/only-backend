@@ -218,11 +218,11 @@ export const declareResult = async (req, res) => {
           }
           break;
 
-        case 'Jodi':
+        case 'Jodi Digit':
           isWinner = String(bet.number).padStart(2, '0') === jodiResult;
           break;
 
-        case 'Single Panna':
+        case 'Single Pana':
           if (bet.betType === 'Open') {
             isWinner = String(bet.number).padStart(3, '0') === openSinglePanna;
           } else if (bet.betType === 'Close') {
