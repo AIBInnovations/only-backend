@@ -149,60 +149,66 @@ export const declareResult = async (req, res) => {
   }
 
   try {
-    console.log('Market ID:', marketId);
+    console.log('📢 Market ID:', marketId);
 
-    // Find the market by marketId
+    // ✅ Find the market by marketId
     const market = await Market.findOne({ marketId });
 
     if (!market) {
+      console.log('❌ Market Not Found!');
       return res.status(404).json({ message: 'Market not found.' });
     }
 
-    console.log('Market found:', market.name);
+    console.log('✅ Market Found:', market.name);
 
-    // Parse Open and Close Results
+    // ✅ Parse Open and Close Results
     const openDigits = openResult.split('').map(Number);
     const closeDigits = closeResult.split('').map(Number);
 
-    // ✅ **Fix Single Digit Results Calculation**
+    // ✅ Calculate Single Digit Results
     const openSingleDigit = openDigits.reduce((sum, digit) => sum + digit, 0) % 10;
     const closeSingleDigit = closeDigits.reduce((sum, digit) => sum + digit, 0) % 10;
 
-    // ✅ **Fix Jodi Result Calculation**
+    // ✅ Calculate Jodi Result
     const jodiResult = `${openSingleDigit}${closeSingleDigit}`;
 
-    // ✅ **Fix Single Panna Open and Close**
+    // ✅ Calculate Single Panna Results
     const openSinglePanna = openResult; // Open Single Panna is the open result (e.g., '580')
     const closeSinglePanna = closeResult; // Close Single Panna is the close result (e.g., '190')
 
-    // ✅ Update the Market in Database
-    const updatedMarket = await Market.findOneAndUpdate(
+    console.log(`🔍 Open Single Digit: ${openSingleDigit}, Close Single Digit: ${closeSingleDigit}, Jodi: ${jodiResult}`);
+    console.log(`🔍 Open Single Panna: ${openSinglePanna}, Close Single Panna: ${closeSinglePanna}`);
+
+    // ✅ **Update the Market in Database**
+    await Market.updateOne(
       { marketId },
       {
-        results: {
-          openNumber: openResult,
-          closeNumber: closeResult,
-          openSingleDigit,
-          closeSingleDigit,
-          jodiResult,
-          openSinglePanna,
-          closeSinglePanna,
+        $set: {
+          results: {
+            openNumber: openResult,
+            closeNumber: closeResult,
+            openSingleDigit,
+            closeSingleDigit,
+            jodiResult,
+            openSinglePanna,
+            closeSinglePanna,
+          },
+          isBettingOpen: false,
         },
-        isBettingOpen: false, // Close betting after result declaration
-      },
-      { new: true }
+      }
     );
 
-    console.log('Market results updated successfully:', updatedMarket);
+    console.log('✅ Market Results Updated in Database');
 
     // ✅ Fetch all pending bets for this market
     const pendingBets = await Bet.find({ marketName: market.name, status: 'pending' });
-    console.log('Total Pending Bets:', pendingBets.length);
+
+    console.log('📢 Total Pending Bets:', pendingBets.length);
 
     for (const bet of pendingBets) {
       let isWinner = false;
 
-      // ✅ **Compare Bet with Result (Fix Bet Type Handling)**
+      // ✅ **Fix Bet Matching Logic**
       switch (bet.gameName) {
         case 'Single Digit':
           if (bet.betType === 'Open') {
@@ -213,14 +219,14 @@ export const declareResult = async (req, res) => {
           break;
 
         case 'Jodi':
-          isWinner = Number(bet.number) === jodiResult;
+          isWinner = String(bet.number).padStart(2, '0') === jodiResult;
           break;
 
         case 'Single Panna':
           if (bet.betType === 'Open') {
-            isWinner = Number(bet.number) === openSinglePanna;
+            isWinner = String(bet.number).padStart(3, '0') === openSinglePanna;
           } else if (bet.betType === 'Close') {
-            isWinner = Number(bet.number) === closeSinglePanna;
+            isWinner = String(bet.number).padStart(3, '0') === closeSinglePanna;
           }
           break;
 
@@ -229,7 +235,7 @@ export const declareResult = async (req, res) => {
       }
 
       console.log(
-        `Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`
+        `🔎 Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`
       );
 
       // ✅ **Update the Bet & User Wallet**
@@ -240,7 +246,7 @@ export const declareResult = async (req, res) => {
         if (user) {
           user.walletBalance += reward;
           await user.save();
-          console.log(`✅ User ${user.email} won ${reward} points!`);
+          console.log(`🎉 User ${user.email} WON! Reward: ${reward}`);
         }
 
         bet.status = 'won';
@@ -251,8 +257,17 @@ export const declareResult = async (req, res) => {
     }
 
     res.status(200).json({
-      message: 'Results declared and rewards distributed successfully!',
-      market: updatedMarket,
+      message: '✅ Results declared and rewards distributed successfully!',
+      market: {
+        marketId,
+        openResult,
+        closeResult,
+        openSingleDigit,
+        closeSingleDigit,
+        jodiResult,
+        openSinglePanna,
+        closeSinglePanna,
+      },
     });
 
   } catch (error) {
