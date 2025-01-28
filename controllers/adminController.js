@@ -153,11 +153,12 @@ export const declareResult = async (req, res) => {
 
     // Find the market by marketId
     const market = await Market.findOne({ marketId });
-    console.log('Market found:', market);
 
     if (!market) {
       return res.status(404).json({ message: 'Market not found.' });
     }
+
+    console.log('Market found:', market.name);
 
     // Parse Open and Close Results
     const openDigits = openResult.split('').map(Number);
@@ -174,85 +175,86 @@ export const declareResult = async (req, res) => {
     const openSinglePanna = openResult; // Open Single Panna is the open result (e.g., '580')
     const closeSinglePanna = closeResult; // Close Single Panna is the close result (e.g., '190')
 
-    // Update the results object within the market
-    market.results = {
-      openNumber: openResult,
-      closeNumber: closeResult,
-      openSingleDigit,
-      closeSingleDigit,
-      jodiResult,
-      openSinglePanna,
-      closeSinglePanna,
-    };
-    market.isBettingOpen = false; // Close betting after result declaration
+    // ✅ Update the Market in Database
+    const updatedMarket = await Market.findOneAndUpdate(
+      { marketId },
+      {
+        results: {
+          openNumber: openResult,
+          closeNumber: closeResult,
+          openSingleDigit,
+          closeSingleDigit,
+          jodiResult,
+          openSinglePanna,
+          closeSinglePanna,
+        },
+        isBettingOpen: false, // Close betting after result declaration
+      },
+      { new: true }
+    );
 
-    await market.save();
-    console.log('Market results updated successfully:', market);
+    console.log('Market results updated successfully:', updatedMarket);
 
-    // Reward the winning users
+    // ✅ Fetch all pending bets for this market
     const winningBets = await Bet.find({ marketName: market.name, status: 'pending' });
-    console.log('Winning bets fetched:', winningBets.length);
+    console.log('Total Bets Pending:', winningBets.length);
 
     for (const bet of winningBets) {
       let isWinner = false;
 
-      // Determine winning condition
+      // ✅ Compare Bet with Result (Consider Bet Type)
       switch (bet.gameName) {
-        case 'Single Digit Open':
-          isWinner = bet.number === openSingleDigit;
+        case 'Single Digit':
+          if (bet.betType === 'Open') {
+            isWinner = bet.number === openSingleDigit;
+          } else if (bet.betType === 'Close') {
+            isWinner = bet.number === closeSingleDigit;
+          }
           break;
-        case 'Single Digit Close':
-          isWinner = bet.number === closeSingleDigit;
-          break;
+
         case 'Jodi':
-          isWinner = `${bet.number}` === jodiResult;
+          isWinner = String(bet.number) === jodiResult;
           break;
-        case 'Single Panna Open':
-          isWinner = `${bet.number}` === openSinglePanna;
+
+        case 'Single Panna':
+          if (bet.betType === 'Open') {
+            isWinner = String(bet.number) === openSinglePanna;
+          } else if (bet.betType === 'Close') {
+            isWinner = String(bet.number) === closeSinglePanna;
+          }
           break;
-        case 'Single Panna Close':
-          isWinner = `${bet.number}` === closeSinglePanna;
-          break;
+
         default:
           break;
       }
 
-      // Reward or mark as lost
+      console.log(`Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`);
+
+      // ✅ Update the Bet & User Wallet
       if (isWinner) {
         const reward = bet.amount * bet.winningRatio;
-
-        // Update user wallet balance
         const user = await User.findById(bet.user);
+
         if (user) {
           user.walletBalance += reward;
           await user.save();
+          console.log(`✅ User ${user.email} won ${reward} points!`);
         }
 
-        // Update bet status
         bet.status = 'won';
-        await bet.save();
       } else {
-        // Mark bet as lost
         bet.status = 'lost';
-        await bet.save();
       }
+      await bet.save();
     }
 
     res.status(200).json({
       message: 'Results declared and rewards distributed successfully!',
-      market: {
-        marketId,
-        openResult,
-        closeResult,
-        openSingleDigit,
-        closeSingleDigit,
-        jodiResult,
-        openSinglePanna,
-        closeSinglePanna,
-      },
+      market: updatedMarket,
     });
+
   } catch (error) {
-    console.error('Error declaring result:', error.message);
+    console.error('❌ Error declaring result:', error.message);
     res.status(500).json({ message: 'Server error while declaring result.' });
   }
 };

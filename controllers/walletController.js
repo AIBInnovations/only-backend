@@ -1,44 +1,44 @@
 import Transaction from '../models/transactionModel.js';
 import User from '../models/userModel.js';
 
-// Add Funds Request
-export const addFundsRequest = async (req, res) => {
-  const { amount, transactionId, receiptUrl } = req.body;
-  const userId = req.user; // Extract userId from authenticated request
+  // Add Funds Request
+  export const addFundsRequest = async (req, res) => {
+    const { amount, transactionId, receiptUrl } = req.body;
+    const userId = req.user; // Extract userId from authenticated request
 
-  // Validate input
-  if (!amount || !transactionId) {
-    return res.status(400).json({ message: 'Amount and Transaction ID are required.' });
-  }
-
-  try {
-    // Check if user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+    // Validate input
+    if (!amount || !transactionId) {
+      return res.status(400).json({ message: 'Amount and Transaction ID are required.' });
     }
 
-    // Create a new transaction
-    const transaction = new Transaction({
-      user: userId,
-      amount,
-      transactionId,
-      receiptUrl,
-      status: 'pending',
-    });
+    try {
+      // Check if user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
 
-    await transaction.save();
+      // Create a new transaction
+      const transaction = new Transaction({
+        user: userId,
+        amount,
+        transactionId,
+        receiptUrl,
+        status: 'pending',
+      });
 
-    // Link the transaction to the user
-    user.transactions.push(transaction._id);
-    await user.save();
+      await transaction.save();
 
-    res.status(201).json({ message: 'Fund request submitted successfully.', transaction });
-  } catch (error) {
-    console.error('Add Funds Error:', error.message);
-    res.status(500).json({ message: 'Server error while submitting fund request.' });
-  }
-};
+      // Link the transaction to the user
+      user.transactions.push(transaction._id);
+      await user.save();
+
+      res.status(201).json({ message: 'Fund request submitted successfully.', transaction });
+    } catch (error) {
+      console.error('Add Funds Error:', error.message);
+      res.status(500).json({ message: 'Server error while submitting fund request.' });
+    }
+  };
 
 // Get Wallet Balance
 export const getWalletBalance = async (req, res) => {
