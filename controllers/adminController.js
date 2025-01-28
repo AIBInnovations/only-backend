@@ -164,14 +164,14 @@ export const declareResult = async (req, res) => {
     const openDigits = openResult.split('').map(Number);
     const closeDigits = closeResult.split('').map(Number);
 
-    // Calculate Single Digit Results
+    // ✅ **Fix Single Digit Results Calculation**
     const openSingleDigit = openDigits.reduce((sum, digit) => sum + digit, 0) % 10;
     const closeSingleDigit = closeDigits.reduce((sum, digit) => sum + digit, 0) % 10;
 
-    // Calculate Jodi Result
+    // ✅ **Fix Jodi Result Calculation**
     const jodiResult = `${openSingleDigit}${closeSingleDigit}`;
 
-    // Calculate Single Panna Results
+    // ✅ **Fix Single Panna Open and Close**
     const openSinglePanna = openResult; // Open Single Panna is the open result (e.g., '580')
     const closeSinglePanna = closeResult; // Close Single Panna is the close result (e.g., '190')
 
@@ -196,31 +196,31 @@ export const declareResult = async (req, res) => {
     console.log('Market results updated successfully:', updatedMarket);
 
     // ✅ Fetch all pending bets for this market
-    const winningBets = await Bet.find({ marketName: market.name, status: 'pending' });
-    console.log('Total Bets Pending:', winningBets.length);
+    const pendingBets = await Bet.find({ marketName: market.name, status: 'pending' });
+    console.log('Total Pending Bets:', pendingBets.length);
 
-    for (const bet of winningBets) {
+    for (const bet of pendingBets) {
       let isWinner = false;
 
-      // ✅ Compare Bet with Result (Consider Bet Type)
+      // ✅ **Compare Bet with Result (Fix Bet Type Handling)**
       switch (bet.gameName) {
         case 'Single Digit':
           if (bet.betType === 'Open') {
-            isWinner = bet.number === openSingleDigit;
+            isWinner = Number(bet.number) === openSingleDigit;
           } else if (bet.betType === 'Close') {
-            isWinner = bet.number === closeSingleDigit;
+            isWinner = Number(bet.number) === closeSingleDigit;
           }
           break;
 
         case 'Jodi':
-          isWinner = String(bet.number) === jodiResult;
+          isWinner = String(bet.number).padStart(2, '0') === jodiResult;
           break;
 
         case 'Single Panna':
           if (bet.betType === 'Open') {
-            isWinner = String(bet.number) === openSinglePanna;
+            isWinner = String(bet.number).padStart(3, '0') === openSinglePanna;
           } else if (bet.betType === 'Close') {
-            isWinner = String(bet.number) === closeSinglePanna;
+            isWinner = String(bet.number).padStart(3, '0') === closeSinglePanna;
           }
           break;
 
@@ -228,9 +228,11 @@ export const declareResult = async (req, res) => {
           break;
       }
 
-      console.log(`Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`);
+      console.log(
+        `Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`
+      );
 
-      // ✅ Update the Bet & User Wallet
+      // ✅ **Update the Bet & User Wallet**
       if (isWinner) {
         const reward = bet.amount * bet.winningRatio;
         const user = await User.findById(bet.user);
