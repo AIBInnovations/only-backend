@@ -171,7 +171,7 @@ export const declareResult = async (req, res) => {
     // Calculate Jodi Result
     const jodiResult = `${openSingleDigit}${closeSingleDigit}`;
 
-    // Calculate Single Panna Results
+    // Single Panna Results
     const openSinglePanna = openResult; // Open Single Panna is the open result (e.g., '580')
     const closeSinglePanna = closeResult; // Close Single Panna is the close result (e.g., '190')
 
@@ -202,7 +202,7 @@ export const declareResult = async (req, res) => {
     for (const bet of winningBets) {
       let isWinner = false;
 
-      // ✅ Compare Bet with Result (Consider Bet Type)
+      // Determine winning condition
       switch (bet.gameName) {
         case 'Single Digit':
           if (bet.betType === 'Open') {
@@ -225,38 +225,29 @@ export const declareResult = async (req, res) => {
           break;
 
         case 'Double Panna':
-          // Double Panna: Two digits are the same and one digit is different
+          // ✅ Double Panna: Check if two digits are the same and one digit is different
           const doubleBetDigits = String(bet.number).split('');
+          const validDoublePanna =
+            (doubleBetDigits[0] === doubleBetDigits[1] && doubleBetDigits[0] !== doubleBetDigits[2]) ||
+            (doubleBetDigits[0] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1]) ||
+            (doubleBetDigits[1] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1]);
+
           if (bet.betType === 'Open') {
-            isWinner =
-              doubleBetDigits.length === 3 &&
-              ((doubleBetDigits[0] === doubleBetDigits[1] && doubleBetDigits[0] !== doubleBetDigits[2]) ||
-                (doubleBetDigits[0] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1]) ||
-                (doubleBetDigits[1] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1])) &&
-              String(bet.number) === openSinglePanna;
+            isWinner = validDoublePanna && String(bet.number) === openSinglePanna;
           } else if (bet.betType === 'Close') {
-            isWinner =
-              doubleBetDigits.length === 3 &&
-              ((doubleBetDigits[0] === doubleBetDigits[1] && doubleBetDigits[0] !== doubleBetDigits[2]) ||
-                (doubleBetDigits[0] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1]) ||
-                (doubleBetDigits[1] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1])) &&
-              String(bet.number) === closeSinglePanna;
+            isWinner = validDoublePanna && String(bet.number) === closeSinglePanna;
           }
           break;
 
         case 'Triple Panna':
-          // Triple Panna: All three digits are the same
+          // ✅ Triple Panna: Check if all three digits are the same
           const tripleBetDigits = String(bet.number).split('');
+          const validTriplePanna = tripleBetDigits.every((digit) => digit === tripleBetDigits[0]);
+
           if (bet.betType === 'Open') {
-            isWinner =
-              tripleBetDigits.length === 3 &&
-              tripleBetDigits.every((digit) => digit === tripleBetDigits[0]) &&
-              String(bet.number) === openSinglePanna;
+            isWinner = validTriplePanna && String(bet.number) === openSinglePanna;
           } else if (bet.betType === 'Close') {
-            isWinner =
-              tripleBetDigits.length === 3 &&
-              tripleBetDigits.every((digit) => digit === tripleBetDigits[0]) &&
-              String(bet.number) === closeSinglePanna;
+            isWinner = validTriplePanna && String(bet.number) === closeSinglePanna;
           }
           break;
 
