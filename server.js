@@ -12,6 +12,8 @@ import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 
+import manageMarketTimings from './utils/marketScheduler.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -73,6 +75,9 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Start the cron job to manage market timings
+manageMarketTimings();
 
 // Export the app for Vercel
 export default app;
