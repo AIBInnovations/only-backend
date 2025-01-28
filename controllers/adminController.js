@@ -225,18 +225,45 @@ export const declareResult = async (req, res) => {
           break;
 
         case 'Double Panna':
-          // Double Panna: Two digits are the same
+          // Double Panna: Two digits are the same and one digit is different
           const betDigits = String(bet.number).split('');
-          isWinner =
-            betDigits.length === 3 &&
-            ((betDigits[0] === betDigits[1] && betDigits[0] !== betDigits[2]) ||
-              (betDigits[0] === betDigits[2] && betDigits[0] !== betDigits[1]) ||
-              (betDigits[1] === betDigits[2] && betDigits[0] !== betDigits[1]));
+          const openPannaDigits = openSinglePanna.split('');
+          const closePannaDigits = closeSinglePanna.split('');
+        
+          if (bet.betType === 'Open') {
+            isWinner =
+              betDigits.length === 3 &&
+              ((betDigits[0] === betDigits[1] && betDigits[0] !== betDigits[2]) ||
+                (betDigits[0] === betDigits[2] && betDigits[0] !== betDigits[1]) ||
+                (betDigits[1] === betDigits[2] && betDigits[0] !== betDigits[1])) &&
+              betDigits.every((digit, index) => digit === openPannaDigits[index]);
+          } else if (bet.betType === 'Close') {
+            isWinner =
+              betDigits.length === 3 &&
+              ((betDigits[0] === betDigits[1] && betDigits[0] !== betDigits[2]) ||
+                (betDigits[0] === betDigits[2] && betDigits[0] !== betDigits[1]) ||
+                (betDigits[1] === betDigits[2] && betDigits[0] !== betDigits[1])) &&
+              betDigits.every((digit, index) => digit === closePannaDigits[index]);
+          }
           break;
-
+        
         case 'Triple Panna':
           // Triple Panna: All three digits are the same
-          isWinner = String(bet.number).split('').every((digit) => digit === String(bet.number)[0]);
+          const tripleBetDigits = String(bet.number).split('');
+          const openTripleDigits = openSinglePanna.split('');
+          const closeTripleDigits = closeSinglePanna.split('');
+        
+          if (bet.betType === 'Open') {
+            isWinner =
+              tripleBetDigits.length === 3 &&
+              tripleBetDigits.every((digit) => digit === tripleBetDigits[0]) &&
+              tripleBetDigits.every((digit, index) => digit === openTripleDigits[index]);
+          } else if (bet.betType === 'Close') {
+            isWinner =
+              tripleBetDigits.length === 3 &&
+              tripleBetDigits.every((digit) => digit === tripleBetDigits[0]) &&
+              tripleBetDigits.every((digit, index) => digit === closeTripleDigits[index]);
+          }
           break;
 
         default:
