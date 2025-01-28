@@ -151,7 +151,6 @@ export const declareResult = async (req, res) => {
   try {
     console.log('📢 Market ID:', marketId);
 
-    // Find the market by marketId
     const market = await Market.findOne({ marketId });
 
     if (!market) {
@@ -160,22 +159,16 @@ export const declareResult = async (req, res) => {
 
     console.log('✅ Market Found:', market.name);
 
-    // Parse Open and Close Results
     const openDigits = openResult.split('').map(Number);
     const closeDigits = closeResult.split('').map(Number);
 
-    // Calculate Single Digit Results
     const openSingleDigit = openDigits.reduce((sum, digit) => sum + digit, 0) % 10;
     const closeSingleDigit = closeDigits.reduce((sum, digit) => sum + digit, 0) % 10;
 
-    // Calculate Jodi Result
     const jodiResult = `${openSingleDigit}${closeSingleDigit}`;
+    const openSinglePanna = openResult;
+    const closeSinglePanna = closeResult;
 
-    // Single Panna Results
-    const openSinglePanna = openResult; // Open Single Panna is the open result (e.g., '580')
-    const closeSinglePanna = closeResult; // Close Single Panna is the close result (e.g., '190')
-
-    // ✅ Update the Market in Database
     const updatedMarket = await Market.findOneAndUpdate(
       { marketId },
       {
@@ -188,28 +181,23 @@ export const declareResult = async (req, res) => {
           openSinglePanna,
           closeSinglePanna,
         },
-        isBettingOpen: false, // Close betting after result declaration
+        isBettingOpen: false,
       },
       { new: true }
     );
 
     console.log('✅ Market Results Updated in Database');
 
-    // ✅ Fetch all pending bets for this market
     const winningBets = await Bet.find({ marketName: market.name, status: 'pending' });
     console.log('📢 Total Pending Bets:', winningBets.length);
 
     for (const bet of winningBets) {
       let isWinner = false;
 
-      // Determine winning condition
       switch (bet.gameName) {
         case 'Single Digit':
-          if (bet.betType === 'Open') {
-            isWinner = bet.number === openSingleDigit;
-          } else if (bet.betType === 'Close') {
-            isWinner = bet.number === closeSingleDigit;
-          }
+          isWinner = (bet.betType === 'Open' && bet.number === openSingleDigit) ||
+                     (bet.betType === 'Close' && bet.number === closeSingleDigit);
           break;
 
         case 'Jodi':
@@ -217,49 +205,36 @@ export const declareResult = async (req, res) => {
           break;
 
         case 'Single Panna':
-          if (bet.betType === 'Open') {
-            isWinner = String(bet.number) === openSinglePanna;
-          } else if (bet.betType === 'Close') {
-            isWinner = String(bet.number) === closeSinglePanna;
-          }
+          isWinner = (bet.betType === 'Open' && String(bet.number) === openSinglePanna) ||
+                     (bet.betType === 'Close' && String(bet.number) === closeSinglePanna);
           break;
 
         case 'Double Panna':
-          // ✅ Double Panna: Check if two digits are the same and one digit is different
-          const doubleBetDigits = String(bet.number).split('');
-          const validDoublePanna =
-            (doubleBetDigits[0] === doubleBetDigits[1] && doubleBetDigits[0] !== doubleBetDigits[2]) ||
-            (doubleBetDigits[0] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1]) ||
-            (doubleBetDigits[1] === doubleBetDigits[2] && doubleBetDigits[0] !== doubleBetDigits[1]);
+          const doubleBetDigits = String(bet.number).split('').map(Number);
+          const isDoublePanna = (digits) => 
+            digits.length === 3 &&
+            ((digits[0] === digits[1] && digits[0] !== digits[2]) ||
+            (digits[0] === digits[2] && digits[0] !== digits[1]) ||
+            (digits[1] === digits[2] && digits[0] !== digits[1]));
 
-          if (bet.betType === 'Open') {
-            isWinner = validDoublePanna && String(bet.number) === openSinglePanna;
-          } else if (bet.betType === 'Close') {
-            isWinner = validDoublePanna && String(bet.number) === closeSinglePanna;
-          }
+          isWinner = (bet.betType === 'Open' && isDoublePanna(doubleBetDigits) && doubleBetDigits.join('') === openSinglePanna) ||
+                     (bet.betType === 'Close' && isDoublePanna(doubleBetDigits) && doubleBetDigits.join('') === closeSinglePanna);
           break;
 
         case 'Triple Panna':
-          // ✅ Triple Panna: Check if all three digits are the same
-          const tripleBetDigits = String(bet.number).split('');
-          const validTriplePanna = tripleBetDigits.every((digit) => digit === tripleBetDigits[0]);
+          const tripleBetDigits = String(bet.number).split('').map(Number);
+          const isTriplePanna = (digits) => digits.length === 3 && digits.every((digit) => digit === digits[0]);
 
-          if (bet.betType === 'Open') {
-            isWinner = validTriplePanna && String(bet.number) === openSinglePanna;
-          } else if (bet.betType === 'Close') {
-            isWinner = validTriplePanna && String(bet.number) === closeSinglePanna;
-          }
+          isWinner = (bet.betType === 'Open' && isTriplePanna(tripleBetDigits) && tripleBetDigits.join('') === openSinglePanna) ||
+                     (bet.betType === 'Close' && isTriplePanna(tripleBetDigits) && tripleBetDigits.join('') === closeSinglePanna);
           break;
 
         default:
           break;
       }
 
-      console.log(
-        `🔎 Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`
-      );
+      console.log(`🔎 Checking Bet: ${bet.number}, Game: ${bet.gameName}, Type: ${bet.betType}, Is Winner: ${isWinner}`);
 
-      // ✅ Update the Bet & User Wallet
       if (isWinner) {
         const reward = bet.amount * bet.winningRatio;
         const user = await User.findById(bet.user);
@@ -286,6 +261,7 @@ export const declareResult = async (req, res) => {
     res.status(500).json({ message: 'Server error while declaring result.' });
   }
 };
+
 
 
 /**
