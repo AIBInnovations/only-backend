@@ -1,5 +1,5 @@
 import express from 'express';
-import { addFundsRequest, getWalletBalance, getTransactions, verifyRequest} from '../controllers/walletController.js';
+import { addFundsRequest, getWalletBalance, getTransactions, verifyRequest, uploadReceipt} from '../controllers/walletController.js';
 import auth from '../middleware/auth.js'; // Authentication middleware
 
 const router = express.Router();
@@ -9,7 +9,8 @@ const router = express.Router();
  * @desc    Submit a request to add funds
  * @access  Private
  */
-router.post('/add-funds', auth, addFundsRequest);
+
+router.post('/add-funds', auth, uploadReceipt, addFundsRequest);
 
 /**
  * @route   GET /api/wallet/balance

@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import Market from './models/marketModel.js';
+import Market from '../models/marketModel.js';
 import moment from 'moment'; // For time manipulation
 
 // Function to open and close markets based on timing
