@@ -1,10 +1,11 @@
+import express from 'express';
 import cloudinary from 'cloudinary';
 import multer from 'multer';
-import path from 'path';
 import fs from 'fs';
 import Transaction from '../models/transactionModel.js';
 import User from '../models/userModel.js';
 
+const router = express.Router();
 
 // Cloudinary Configuration
 cloudinary.v2.config({
@@ -19,7 +20,7 @@ const upload = multer({ dest: 'uploads/' });
 
 
 // API to Upload File to Cloudinary
-app.post('/upload', upload.single('receipt'), async (req, res) => {
+router.post('/upload', upload.single('receipt'), async (req, res) => {
   try {
     const result = await cloudinary.v2.uploader.upload(req.file.path);
     fs.unlinkSync(req.file.path); // Remove temp file after upload
