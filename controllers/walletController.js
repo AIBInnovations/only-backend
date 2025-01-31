@@ -1,26 +1,35 @@
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary from 'cloudinary';
 import multer from 'multer';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import path from 'path';
+import fs from 'fs';
 import Transaction from '../models/transactionModel.js';
 import User from '../models/userModel.js';
 
-// Cloudinary Config
-cloudinary.config({
+
+// Cloudinary Configuration
+cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Multer Storage Config for Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'receipts', // Name of folder in Cloudinary
-    allowed_formats: ['jpg', 'jpeg', 'png'], // Allowed formats
-  },
+
+// Multer Storage (Temporary local storage)
+const upload = multer({ dest: 'uploads/' });
+
+
+// API to Upload File to Cloudinary
+app.post('/upload', upload.single('receipt'), async (req, res) => {
+  try {
+    const result = await cloudinary.v2.uploader.upload(req.file.path);
+    fs.unlinkSync(req.file.path); // Remove temp file after upload
+
+    res.json({ receiptUrl: result.secure_url });
+  } catch (error) {
+    res.status(500).json({ message: 'Error uploading file', error: error.message });
+  }
 });
 
-const upload = multer({ storage });
 
 // Add Funds Request (Updated with Image Upload)
 export const addFundsRequest = async (req, res) => {
