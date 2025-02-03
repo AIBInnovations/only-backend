@@ -1,94 +1,119 @@
-import express from 'express';
-import cloudinary from 'cloudinary';
 import multer from 'multer';
+import cloudinary from 'cloudinary';
 import fs from 'fs';
 import Transaction from '../models/transactionModel.js';
 import User from '../models/userModel.js';
 
-const router = express.Router();
-
-// Cloudinary Configuration
+// ✅ Cloudinary Configuration (Ensure ENV Variables are Set)
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
-// Multer Storage (Temporary local storage)
-const upload = multer({ dest: 'uploads/' });
-
-
-// API to Upload File to Cloudinary
-router.post('/upload', upload.single('receipt'), async (req, res) => {
-  try {
-    const result = await cloudinary.v2.uploader.upload(req.file.path);
-    fs.unlinkSync(req.file.path); // Remove temp file after upload
-
-    res.json({ receiptUrl: result.secure_url });
-  } catch (error) {
-    res.status(500).json({ message: 'Error uploading file', error: error.message });
-  }
+// Debug to check if Cloudinary is configured correctly
+console.log("✅ Cloudinary Config Loaded:", {
+  cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+  apiKey: process.env.CLOUDINARY_API_KEY,
+  apiSecret: process.env.CLOUDINARY_API_SECRET ? "Exists" : "Missing"
 });
 
+// ✅ Multer Storage for Files
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Temporary local storage before Cloudinary upload
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
 
-// Add Funds Request (Updated with Image Upload)
+// ✅ Validate File Type (Images & PDFs)
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type. Only JPG, PNG, and PDF allowed."), false);
+  }
+};
+
+export const upload = multer({ storage, fileFilter });
+export const uploadReceipt = upload.single("receipt");
+
+
+// ✅ Add Funds Request (Now Handles Receipt Upload)
 export const addFundsRequest = async (req, res) => {
   const { transactionId, amount } = req.body;
   const userId = req.user;
 
   if (!transactionId || !amount || amount <= 0) {
-    return res.status(400).json({ message: 'Transaction ID and amount are required.' });
+    return res.status(400).json({ message: "Transaction ID and amount are required." });
   }
 
   try {
-    // Check if user exists
+    // ✅ Check if user exists
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: "User not found." });
     }
 
-    // Upload receipt to Cloudinary
     let receiptUrl = null;
+
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path);
-      receiptUrl = result.secure_url; // Cloudinary public URL
+      try {
+        console.log("📢 Uploading File to Cloudinary:", req.file.path);
+
+        // ✅ Ensure Cloudinary uses `v2`
+        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: "wallet_receipts",
+          use_filename: true,
+          unique_filename: false,
+          resource_type: "auto", // ✅ Supports images, PDFs, videos
+        });
+
+        receiptUrl = result.secure_url;
+        console.log("✅ Upload Successful:", receiptUrl);
+
+        // ✅ Delete Local File After Upload
+        fs.unlinkSync(req.file.path);
+      } catch (uploadError) {
+        console.error("❌ Cloudinary Upload Error:", uploadError);
+        return res.status(500).json({ message: "Failed to upload receipt.", error: uploadError.message });
+      }
+    } else {
+      console.log("❌ No File Found in Request.");
+      return res.status(400).json({ message: "Receipt file is required." });
     }
 
-    // Create transaction with receipt URL
+    // ✅ Create Transaction
     const transaction = new Transaction({
       user: userId,
       amount,
       transactionId,
       receiptUrl, // Save Cloudinary URL
-      status: 'pending',
+      status: "pending",
     });
 
     await transaction.save();
 
-    // Link transaction to user
+    // ✅ Link Transaction to User
     user.transactions.push(transaction._id);
     await user.save();
 
-    res.status(201).json({ message: 'Fund request submitted successfully.', transaction });
+    res.status(201).json({ message: "Fund request submitted successfully.", transaction });
   } catch (error) {
-    console.error('Error adding funds:', error.message);
-    res.status(500).json({ message: 'Server error while submitting fund request.' });
+    console.error("❌ Error adding funds:", error);
+    res.status(500).json({ message: "Server error while submitting fund request.", error: error.message });
   }
 };
 
-// Middleware to handle file uploads
-export const uploadReceipt = upload.single('receipt');
-
-// Get Wallet Balance
+// ✅ Get Wallet Balance
 export const getWalletBalance = async (req, res) => {
-  const userId = req.user; // Extract userId from authenticated request
-
   try {
-    const user = await User.findById(userId).select('walletBalance');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
+    const user = await User.findById(req.user).select('walletBalance');
+    if (!user) return res.status(404).json({ message: 'User not found.' });
 
     res.status(200).json({ walletBalance: user.walletBalance });
   } catch (error) {
@@ -97,12 +122,10 @@ export const getWalletBalance = async (req, res) => {
   }
 };
 
-// Get Transactions
+// ✅ Get Transactions
 export const getTransactions = async (req, res) => {
-  const userId = req.user; // Extract userId from authenticated request
-
   try {
-    const transactions = await Transaction.find({ user: userId }).sort({ createdAt: -1 });
+    const transactions = await Transaction.find({ user: req.user }).sort({ createdAt: -1 });
     res.status(200).json({ transactions });
   } catch (error) {
     console.error('Get Transactions Error:', error.message);
@@ -110,6 +133,7 @@ export const getTransactions = async (req, res) => {
   }
 };
 
+// ✅ Verify Transaction
 export const verifyRequest = async (req, res) => {
   const { transactionId, status } = req.body;
 
@@ -118,14 +142,14 @@ export const verifyRequest = async (req, res) => {
   }
 
   try {
-    // Find the transaction by transactionId
+    // ✅ Find the transaction by ID
     const transaction = await Transaction.findOne({ transactionId });
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found.' });
     }
 
     if (status === 'approved') {
-      // Approve the transaction and update user's wallet balance
+      // ✅ Approve and update user wallet balance
       const user = await User.findById(transaction.user);
       if (!user) {
         return res.status(404).json({ message: 'User associated with the transaction not found.' });
@@ -134,7 +158,7 @@ export const verifyRequest = async (req, res) => {
       await user.save();
     }
 
-    // Update transaction status
+    // ✅ Update Transaction Status
     transaction.status = status;
     transaction.isSuccessful = status === 'approved';
     await transaction.save();
