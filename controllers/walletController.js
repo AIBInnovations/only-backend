@@ -1,8 +1,12 @@
 import multer from 'multer';
 import cloudinary from 'cloudinary';
 import fs from 'fs';
+import dotenv from "dotenv";
 import Transaction from '../models/transactionModel.js';
 import User from '../models/userModel.js';
+
+// Load environment variables from .env
+dotenv.config();
 
 // ✅ Cloudinary Configuration (Ensure ENV Variables are Set)
 cloudinary.v2.config({
