@@ -4,6 +4,10 @@ import Market from '../models/marketModel.js';
 import Transaction from '../models/transactionModel.js';
 import Admin from '../models/adminModel.js'; // Ensure the path is correct
 import WinningRatio from '../models/winningRatioModel.js';
+import PlatformSettings from "../models/platformSettingsModel.js";
+import cloudinary from "cloudinary";
+import multer from 'multer';
+import dotenv from "dotenv";
 
 
 // Fetch all users
@@ -518,5 +522,113 @@ export const deleteUser = async (req, res) => {
   } catch (error) {
     console.error('Error deleting user:', error.message);
     res.status(500).json({ message: 'Server error while deleting user' });
+  }
+};
+
+// ✅ Fetch Platform Settings
+export const getPlatformSettings = async (req, res) => {
+  try {
+    const settings = await PlatformSettings.findOne();
+    if (!settings) {
+      return res.status(404).json({ message: 'Platform settings not found.' });
+    }
+    res.status(200).json(settings);
+  } catch (error) {
+    console.error('Error fetching settings:', error.message);
+    res.status(500).json({ message: 'Server error while fetching platform settings.' });
+  }
+};
+
+// Load environment variables from .env
+dotenv.config();
+
+// ✅ Configure Cloudinary
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ✅ Multer Setup for File Uploads (Temporary Buffer Storage)
+const storage = multer.memoryStorage();
+const upload = multer({ storage }).fields([
+  { name: 'qrCode', maxCount: 1 },
+  { name: 'bannerImage', maxCount: 1 },
+]);
+
+// ✅ Update Platform Settings API
+export const updatePlatformSettings = async (req, res) => {
+  try {
+    console.log('📢 Incoming Update Request:', req.body, req.files);
+
+    let updateFields = {};
+
+    // ✅ Handle UPI ID Update
+    if (req.body.upiId) {
+      updateFields.upiId = req.body.upiId.trim();
+    }
+
+    // ✅ Handle Admin Contact Details (Fixing JSON Parsing Issue)
+    if (req.body.adminContact) {
+      try {
+        updateFields.adminContact =
+          typeof req.body.adminContact === 'string'
+            ? JSON.parse(req.body.adminContact) // ✅ Parse JSON string
+            : req.body.adminContact; // ✅ Use directly if already an object
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid adminContact format. Use a valid JSON object.' });
+      }
+    }
+
+    // ✅ Handle File Uploads to Cloudinary
+    if (req.files?.qrCode) {
+      console.log('📢 Uploading QR Code...');
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.v2.uploader.upload_stream({ folder: 'platform_settings' }, (error, result) => {
+          if (error) {
+            console.error('❌ Cloudinary QR Code Upload Error:', error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+        uploadStream.end(req.files.qrCode[0].buffer);
+      });
+      updateFields.qrCodeUrl = result.secure_url;
+    }
+
+    if (req.files?.bannerImage) {
+      console.log('📢 Uploading Banner Image...');
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.v2.uploader.upload_stream({ folder: 'platform_settings' }, (error, result) => {
+          if (error) {
+            console.error('❌ Cloudinary Banner Image Upload Error:', error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+        uploadStream.end(req.files.bannerImage[0].buffer);
+      });
+      updateFields.bannerImageUrl = result.secure_url;
+    }
+
+    // ✅ Ensure at least one field is updated
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({ message: 'No valid update fields provided.' });
+    }
+
+    // ✅ Update settings in database (Create if doesn't exist)
+    const settings = await PlatformSettings.findOneAndUpdate(
+      {},
+      { $set: updateFields },
+      { new: true, upsert: true }
+    );
+
+    console.log('✅ Updated Platform Settings:', settings);
+    res.status(200).json({ message: 'Platform settings updated successfully!', settings });
+  } catch (error) {
+    console.error('❌ Error updating platform settings:', error.message);
+    res.status(500).json({ message: 'Server error while updating platform settings.' });
   }
 };

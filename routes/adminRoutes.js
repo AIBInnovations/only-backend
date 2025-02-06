@@ -1,8 +1,8 @@
 import express from 'express';
-import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser, getAllWinningRatios, updateWinningRatio} from '../controllers/adminController.js';
+import multer from 'multer';
+import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser, getAllWinningRatios, updateWinningRatio, updatePlatformSettings, getPlatformSettings} from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails } from '../controllers/userController.js';
-
 const router = express.Router();
 
 /**
@@ -88,5 +88,23 @@ router.delete('/bets/:id', adminAuth, deleteBet);
 
 // Delete a user
 router.delete('/users/:userId', adminAuth, deleteUser);
+
+/**
+ * @route   GET /api/admin/platform-settings
+ * @desc    Fetch current platform settings
+ * @access  Admin Only
+ */
+router.get('/platform-settings', adminAuth, getPlatformSettings);
+
+// ✅ Multer Middleware for File Uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage }).fields([
+  { name: 'qrCode', maxCount: 1 },
+  { name: 'bannerImage', maxCount: 1 },
+]);
+
+// ✅ API to Update Platform Settings (Allows Individual Field Updates)
+router.put('/platform-settings', adminAuth, upload, updatePlatformSettings);
+
 
 export default router;
