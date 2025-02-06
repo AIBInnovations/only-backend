@@ -191,47 +191,47 @@ export const declareResult = async (req, res) => {
     const winningBets = await Bet.find({ marketName: market.name, status: 'pending' });
     console.log('📢 Total Pending Bets:', winningBets.length);
 
-
     for (const bet of winningBets) {
       let isWinner = false;
 
-      switch (bet.gameName) {
+      switch (bet.gameName) {  // Use gameName to determine the logic
         case 'Single Digit':
           if (bet.betType === 'Open') {
-            isWinner = bet.number === openSingleDigit;
+            isWinner = parseInt(bet.number) === openSingleDigit;
           } else if (bet.betType === 'Close') {
-            isWinner = bet.number === closeSingleDigit;
+            isWinner = parseInt(bet.number) === closeSingleDigit;
           }
           break;
-
+  
         case 'Jodi':
-          isWinner = String(bet.number) === jodiResult;
+          isWinner = bet.number === jodiResult;
           break;
-
+  
         case 'Single Panna':
           if (bet.betType === 'Open') {
-            isWinner = String(bet.number) === openSinglePanna;
+            isWinner = bet.number === openSinglePanna;
           } else if (bet.betType === 'Close') {
-            isWinner = String(bet.number) === closeSinglePanna;
+            isWinner = bet.number === closeSinglePanna;
           }
           break;
-
+  
         case 'Double Panna':
-          const betNumberStr = String(bet.number);
-          const openPannaStr = String(openSinglePanna);
-          const closePannaStr = String(closeSinglePanna);
-
+          const betNumberStr = bet.number;
+          const openPannaStr = openSinglePanna;
+          const closePannaStr = closeSinglePanna;
+  
           if (bet.betType === 'Open') {
-             isWinner = betNumberStr === openPannaStr && isDoublePanna(betNumberStr);
+            isWinner = betNumberStr === openPannaStr && isDoublePanna(betNumberStr);
           } else if (bet.betType === 'Close') {
             isWinner = betNumberStr === closePannaStr && isDoublePanna(betNumberStr);
           }
           break;
-
+  
         case 'Triple Panna':
-          const betTripleNumberStr = String(bet.number);
-          const openTriplePannaStr = String(openSinglePanna);
-          const closeTriplePannaStr = String(closeSinglePanna);
+          const betTripleNumberStr = bet.number;
+          const openTriplePannaStr = openSinglePanna;
+          const closeTriplePannaStr = closeSinglePanna;
+  
           if (bet.betType === 'Open') {
             isWinner = betTripleNumberStr === openTriplePannaStr && isTriplePanna(betTripleNumberStr);
           } else if (bet.betType === 'Close') {
@@ -239,6 +239,49 @@ export const declareResult = async (req, res) => {
           }
           break;
 
+        case 'Half Sangam':
+          let betPannaPart, betDigitPart;
+  
+          if (bet.number.includes('-')) {
+            const parts = bet.number.split('-');
+            if (parts.length === 2) {
+              if (parts[0].length === 3 && parts[1].length === 1) {
+                betPannaPart = parts[0];
+                betDigitPart = parts[1];
+              } else if (parts[0].length === 1 && parts[1].length === 3) {
+                betDigitPart = parts[0];
+                betPannaPart = parts[1];
+              } else {
+                console.log("Invalid Half Sangam bet format:", bet.number);
+                break; // Skip this bet
+              }
+            } else {
+              console.log("Invalid Half Sangam bet format:", bet.number);
+              break; // Skip this bet
+            }
+          } else {
+            console.log("Invalid Half Sangam bet format:", bet.number);
+            break; // Skip this bet
+          }
+  
+          const openDigits = market.results.openNumber.split('').map(Number);
+          const closeDigits = market.results.closeNumber.split('').map(Number);
+          const openDigitResult = openDigits.reduce((sum, digit) => sum + digit, 0) % 10;
+          const closeDigitResult = closeDigits.reduce((sum, digit) => sum + digit, 0) % 10;
+  
+          const openPannaString = market.results.openSinglePanna;
+          const closePannaString = market.results.closeSinglePanna;
+  
+          const hsaWinner = betPannaPart === openPannaString && betDigitPart === String(closeDigitResult);
+          const hsbWinner = betPannaPart === closePannaString && betDigitPart === String(openDigitResult);
+  
+          isWinner = hsaWinner || hsbWinner;
+          break;
+  
+        case 'Full Sangam':
+          isWinner = bet.number === `${market.results.openSinglePanna}-${market.results.closeSinglePanna}`;
+          break;
+  
         default:
           break;
       }

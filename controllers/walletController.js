@@ -15,13 +15,6 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Debug to check if Cloudinary is configured correctly
-console.log("✅ Cloudinary Config Loaded:", {
-  cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-  apiKey: process.env.CLOUDINARY_API_KEY,
-  apiSecret: process.env.CLOUDINARY_API_SECRET ? "Exists" : "Missing"
-});
-
 // ✅ Multer Storage for Files
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
