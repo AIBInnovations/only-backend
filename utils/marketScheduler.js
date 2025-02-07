@@ -7,56 +7,43 @@ const manageMarketTimings = () => {
 
   cron.schedule('* * * * *', async () => { // Run every minute
     try {
-      const now = moment().tz("Asia/Kolkata"); // Set to your desired timezone (e.g., IST)
-      const currentTime = now.format('HH:mm');
+      const now = moment().tz("Asia/Kolkata").format('HH:mm'); // Current time in IST
+      console.log(`🕒 Checking markets at ${now}`);
 
+      // 1️⃣ Open Markets (When openTime is reached)
+      const marketsToOpen = await Market.updateMany(
+        { openTime: now, isBettingOpen: false }, 
+        { $set: { isBettingOpen: true, openBetting: true } }
+      );
 
-      // 1. Open Markets (10 minutes before openTime)
-      const openQuery = {
-        openTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') },
-        isBettingOpen: false,
-      };
-
-      console.log("Open Markets Query:", openQuery);
-      console.log("Current Time:", now.format('HH:mm'));
-
-      const marketsToOpen = await Market.findOneAndUpdate(openQuery, { isBettingOpen: true, openBetting: true }, { new: true });
-
-      if (marketsToOpen) {
-        console.log(`✅ Market "${marketsToOpen.name}" is now open.`, marketsToOpen);
+      if (marketsToOpen.modifiedCount > 0) {
+        console.log(`✅ ${marketsToOpen.modifiedCount} market(s) opened for betting.`);
       }
 
-      // 2. Close Open Bets (10 minutes before closeTime)
-      const closeOpenBetsQuery = {
-        closeTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') },
-        isBettingOpen: true,
-        openBetting: true,
-      };
+      // 2️⃣ Close Open Bets (10 minutes before closeTime)
+      const tenMinutesBeforeClose = moment().tz("Asia/Kolkata").subtract(10, 'minutes').format('HH:mm');
 
-      console.log("Close Open Bets Query:", closeOpenBetsQuery);
+      const marketsToCloseOpenBets = await Market.updateMany(
+        { closeTime: tenMinutesBeforeClose, isBettingOpen: true, openBetting: true },
+        { $set: { openBetting: false } }
+      );
 
-      const marketsToCloseOpenBets = await Market.findOneAndUpdate(closeOpenBetsQuery, { openBetting: false }, { new: true });
-
-      if (marketsToCloseOpenBets) {
-        console.log(`⛔ Open bets for "${marketsToCloseOpenBets.name}" are now closed.`, marketsToCloseOpenBets);
+      if (marketsToCloseOpenBets.modifiedCount > 0) {
+        console.log(`⛔ ${marketsToCloseOpenBets.modifiedCount} market(s) closed for open bets.`);
       }
 
-      // 3. Close All Betting (at closeTime)
-      const closeAllBetsQuery = {
-        closeTime: now.format('HH:mm'),
-        isBettingOpen: true,
-      };
+      // 3️⃣ Close All Betting (When closeTime is reached)
+      const marketsToClose = await Market.updateMany(
+        { closeTime: now, isBettingOpen: true },
+        { $set: { isBettingOpen: false } }
+      );
 
-      console.log("Close All Bets Query:", closeAllBetsQuery);
-
-      const marketsToClose = await Market.findOneAndUpdate(closeAllBetsQuery, { isBettingOpen: false }, { new: true });
-
-      if (marketsToClose) {
-        console.log(`❌ Market "${marketsToClose.name}" is now closed.`, marketsToClose);
+      if (marketsToClose.modifiedCount > 0) {
+        console.log(`❌ ${marketsToClose.modifiedCount} market(s) fully closed.`);
       }
 
     } catch (error) {
-      console.error('❌ Error in managing market timings:', error); // Log the full error object
+      console.error('❌ Error in managing market timings:', error);
     }
   });
 };
