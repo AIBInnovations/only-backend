@@ -10,51 +10,51 @@ const manageMarketTimings = () => {
       const now = moment();
 
       // 1. Open Markets (10 minutes before openTime)
-      const marketsToOpen = await Market.findOneAndUpdate(
-        { 
-          openTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') }, 
-          isBettingOpen: false 
-        },
-        { isBettingOpen: true, openBetting: true },
-        { new: true }
-      );
+      const openQuery = {
+        openTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') },
+        isBettingOpen: false,
+      };
+
+      console.log("Open Markets Query:", openQuery);
+      console.log("Current Time:", now.format('HH:mm'));
+
+      const marketsToOpen = await Market.findOneAndUpdate(openQuery, { isBettingOpen: true, openBetting: true }, { new: true });
 
       if (marketsToOpen) {
-        console.log(`✅ Market "${marketsToOpen.name}" is now open.`, marketsToOpen); // Log the updated market
+        console.log(`✅ Market "${marketsToOpen.name}" is now open.`, marketsToOpen);
       }
 
       // 2. Close Open Bets (10 minutes before closeTime)
-      const marketsToCloseOpenBets = await Market.findOneAndUpdate(
-        { 
-          closeTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') }, 
-          isBettingOpen: true,
-          openBetting: true // Only if open bets are currently allowed
-        },
-        { openBetting: false },
-        { new: true }
-      );
+      const closeOpenBetsQuery = {
+        closeTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') },
+        isBettingOpen: true,
+        openBetting: true,
+      };
+
+      console.log("Close Open Bets Query:", closeOpenBetsQuery);
+
+      const marketsToCloseOpenBets = await Market.findOneAndUpdate(closeOpenBetsQuery, { openBetting: false }, { new: true });
 
       if (marketsToCloseOpenBets) {
-        console.log(`⛔ Open bets for "${marketsToCloseOpenBets.name}" are now closed.`, marketsToCloseOpenBets); // Log updated market
+        console.log(`⛔ Open bets for "${marketsToCloseOpenBets.name}" are now closed.`, marketsToCloseOpenBets);
       }
 
-
       // 3. Close All Betting (at closeTime)
-      const marketsToClose = await Market.findOneAndUpdate(
-        { 
-          closeTime: now.format('HH:mm'), 
-          isBettingOpen: true 
-        },
-        { isBettingOpen: false },
-        { new: true }
-      );
+      const closeAllBetsQuery = {
+        closeTime: now.format('HH:mm'),
+        isBettingOpen: true,
+      };
+
+      console.log("Close All Bets Query:", closeAllBetsQuery);
+
+      const marketsToClose = await Market.findOneAndUpdate(closeAllBetsQuery, { isBettingOpen: false }, { new: true });
 
       if (marketsToClose) {
-        console.log(`❌ Market "${marketsToClose.name}" is now closed.`, marketsToClose); // Log updated market
+        console.log(`❌ Market "${marketsToClose.name}" is now closed.`, marketsToClose);
       }
 
     } catch (error) {
-      console.error('❌ Error in managing market timings:', error.message);
+      console.error('❌ Error in managing market timings:', error); // Log the full error object
     }
   });
 };
