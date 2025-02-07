@@ -1,13 +1,15 @@
 import cron from 'node-cron';
 import Market from '../models/marketModel.js';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 const manageMarketTimings = () => {
   console.log('🔄 Cron job started to manage market timings.');
 
   cron.schedule('* * * * *', async () => { // Run every minute
     try {
-      const now = moment();
+      const now = moment().tz("Asia/Kolkata"); // Set to your desired timezone (e.g., IST)
+      const currentTime = now.format('HH:mm');
+
 
       // 1. Open Markets (10 minutes before openTime)
       const openQuery = {
