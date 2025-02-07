@@ -1,32 +1,48 @@
 import cron from 'node-cron';
 import Market from '../models/marketModel.js';
-import moment from 'moment'; // For time manipulation
+import moment from 'moment';
 
-// Function to open and close markets based on timing
 const manageMarketTimings = () => {
   console.log('🔄 Cron job started to manage market timings.');
 
-  // Schedule to run every minute
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('* * * * *', async () => { // Run every minute
     try {
-      const currentTime = moment().format('HH:mm'); // Get current time in 'HH:mm' format
+      const now = moment();
 
-      // Open markets that should open now
+      // 1. Open Markets (10 minutes before openTime)
       const marketsToOpen = await Market.find({
-        openTime: currentTime,
-        isBettingOpen: false, // Only open markets that are currently closed
+        openTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') },
+        isBettingOpen: false,
       });
 
       for (const market of marketsToOpen) {
-        market.isBettingOpen = true;
-        await market.save();
-        console.log(`✅ Market "${market.name}" is now open.`);
+        if (moment(market.openTime, "HH:mm").isSameOrBefore(now)) {
+          market.isBettingOpen = true;
+          market.openBetting = true; // Enable Open bets
+          await market.save();
+          console.log(`✅ Market "${market.name}" is now open.`);
+        }
       }
 
-      // Close markets that should close now
+      // 2. Close Open Bets (10 minutes before closeTime)
+      const marketsToCloseOpenBets = await Market.find({
+        closeTime: { $gte: now.clone().subtract(10, 'minutes').format('HH:mm') },
+        isBettingOpen: true,
+        openBetting: true, // Only if open bets are currently allowed
+      });
+
+      for (const market of marketsToCloseOpenBets) {
+        if (moment(market.closeTime, "HH:mm").isSameOrBefore(now)) {
+          market.openBetting = false; // Block Open bets
+          await market.save();
+          console.log(`⛔ Open bets for "${market.name}" are now closed.`);
+        }
+      }
+
+      // 3. Close All Betting (at closeTime)
       const marketsToClose = await Market.find({
-        closeTime: currentTime,
-        isBettingOpen: true, // Only close markets that are currently open
+        closeTime: now.format('HH:mm'), // Close at closeTime
+        isBettingOpen: true,
       });
 
       for (const market of marketsToClose) {
