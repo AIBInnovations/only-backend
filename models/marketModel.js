@@ -20,11 +20,13 @@ const marketSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  isBettingOpen: { // Remove explicit type
-    default: false, // Correct default value (boolean)
+  isBettingOpen: {
+    type: Boolean, // Explicitly define the type as Boolean
+    default: false,
   },
-  openBetting: {  // Add openBetting field
-    default: true,  // Correct default value (boolean)
+  openBetting: {
+    type: Boolean, // Explicitly define the type as Boolean
+    default: true,
   },
   results: {
     openNumber: String,
