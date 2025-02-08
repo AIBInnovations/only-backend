@@ -56,32 +56,36 @@ export const getMarketsWithUpdatedStatus = async (req, res) => {
 
     // Update market status dynamically based on the current time
     const updatedMarkets = markets.map(market => {
-      const { openTime, closeTime } = market;
+      const { openTime, closeTime, isBettingOpen } = market;
 
-      let isBettingOpen = market.isBettingOpen;
-      let openBetting = market.openBetting;
+      let newIsBettingOpen = isBettingOpen;
+      let newOpenBetting = market.openBetting;
 
-      // Open market if the current time is at or after openTime
-      if (moment(currentTime, "HH:mm").isSameOrAfter(moment(openTime, "HH:mm"))) {
-        isBettingOpen = true;
-        openBetting = true;
+      const openMoment = moment(openTime, "HH:mm");
+      const closeMoment = moment(closeTime, "HH:mm");
+      const tenMinutesBeforeClose = closeMoment.clone().subtract(10, 'minutes');
+
+      // 🔹 Open Market Logic: If current time is **equal or after** openTime
+      if (now.isSameOrAfter(openMoment) && now.isBefore(closeMoment)) {
+        newIsBettingOpen = true;
+        newOpenBetting = true;
       }
 
-      // Close Open Betting (10 min before closeTime)
-      const tenMinutesBeforeClose = moment(closeTime, "HH:mm").subtract(10, 'minutes').format('HH:mm');
-      if (openBetting && moment(currentTime, "HH:mm").isSameOrAfter(moment(tenMinutesBeforeClose, "HH:mm"))) {
-        openBetting = false;
+      // 🔸 Close Open Betting (10 min before closeTime)
+      if (now.isSameOrAfter(tenMinutesBeforeClose) && now.isBefore(closeMoment)) {
+        newOpenBetting = false;
       }
 
-      // Close market at closeTime
-      if (moment(currentTime, "HH:mm").isSameOrAfter(moment(closeTime, "HH:mm"))) {
-        isBettingOpen = false;
+      // ❌ Fully Close Market: If current time **is equal or after closeTime**
+      if (now.isSameOrAfter(closeMoment)) {
+        newIsBettingOpen = false;
+        newOpenBetting = false;
       }
 
       return {
         ...market.toObject(),
-        isBettingOpen,
-        openBetting,
+        isBettingOpen: newIsBettingOpen,
+        openBetting: newOpenBetting,
       };
     });
 
