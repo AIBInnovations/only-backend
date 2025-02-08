@@ -1,5 +1,6 @@
 import express from 'express';
 import Market from '../models/marketModel.js';
+import { getMarketsWithUpdatedStatus } from '../controllers/marketController.js';
 
 const router = express.Router();
 
@@ -30,5 +31,8 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// API to fetch markets with dynamically updated status
+router.get('/', getMarketsWithUpdatedStatus);
 
 export default router;
