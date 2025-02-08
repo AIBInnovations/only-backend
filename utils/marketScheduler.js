@@ -5,9 +5,9 @@ import moment from 'moment-timezone';
 const manageMarketTimings = () => {
   console.log('🔄 Cron job started to manage market timings.');
 
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('* * * * *', async () => { // Run every minute
     try {
-      const now = moment().tz("Asia/Kolkata"); // Set time to IST
+      const now = moment().tz("Asia/Kolkata");
       const currentTime = now.format('HH:mm');
 
       console.log(`🕒 Checking markets at ${currentTime}`);
@@ -24,8 +24,16 @@ const manageMarketTimings = () => {
 
         const openTimeMoment = moment(openTime, "HH:mm");
         const closeTimeMoment = moment(closeTime, "HH:mm");
-        const tenMinutesBeforeOpen = openTimeMoment.subtract(10, 'minutes').format('HH:mm');
-        const tenMinutesBeforeClose = closeTimeMoment.subtract(10, 'minutes').format('HH:mm');
+        const tenMinutesBeforeOpen = openTimeMoment.clone().subtract(10, 'minutes').format('HH:mm');
+        const tenMinutesBeforeClose = closeTimeMoment.clone().subtract(10, 'minutes').format('HH:mm');
+
+        // 🔹 **Fix wrongly open markets (Markets open at wrong time should be forcefully closed)**
+        if (isBettingOpen && (currentTime < openTime || currentTime > closeTime)) {
+          market.isBettingOpen = false;
+          market.openBetting = false;
+          await market.save();
+          console.log(`❌ Auto-Corrected: Market "${market.name}" was wrongly open and has been CLOSED.`);
+        }
 
         // 1️⃣ **Open the market at `openTime`**
         if (currentTime === openTime && !isBettingOpen) {
@@ -36,7 +44,7 @@ const manageMarketTimings = () => {
         }
 
         // 2️⃣ **Restrict open bets 10 minutes before `openTime`**
-        if (currentTime === tenMinutesBeforeOpen && isBettingOpen) {
+        if (currentTime === tenMinutesBeforeOpen && isBettingOpen && openBetting) {
           market.openBetting = false; // Open bets closed, but close bets allowed
           await market.save();
           console.log(`⛔ Open betting for "${market.name}" is now CLOSED. Close bets are still allowed.`);
