@@ -40,13 +40,17 @@ export const upload = multer({ storage, fileFilter });
 export const uploadReceipt = upload.single("receipt");
 
 
-// ✅ Add Funds Request (Now Handles Receipt Upload)
-export const addFundsRequest = async (req, res) => {
-  const { transactionId, amount } = req.body;
+// ✅ Add Funds & Withdrawal Request
+export const handleFundRequest = async (req, res) => {
+  const { transactionId, amount, type } = req.body; // `type` determines deposit/withdrawal
   const userId = req.user;
 
-  if (!transactionId || !amount || amount <= 0) {
-    return res.status(400).json({ message: "Transaction ID and amount are required." });
+  if (!transactionId || !amount || amount <= 0 || !type) {
+    return res.status(400).json({ message: "Transaction ID, type, and amount are required." });
+  }
+
+  if (!["deposit", "withdrawal"].includes(type)) {
+    return res.status(400).json({ message: "Invalid transaction type. Use 'deposit' or 'withdrawal'." });
   }
 
   try {
@@ -58,30 +62,40 @@ export const addFundsRequest = async (req, res) => {
 
     let receiptUrl = null;
 
-    if (req.file) {
+    // ✅ Handle Deposits (Requires Receipt)
+    if (type === "deposit") {
+      if (!req.file) {
+        return res.status(400).json({ message: "Receipt file is required for deposits." });
+      }
+
       try {
         console.log("📢 Uploading File to Cloudinary:", req.file.path);
 
-        // ✅ Ensure Cloudinary uses `v2`
         const result = await cloudinary.v2.uploader.upload(req.file.path, {
           folder: "wallet_receipts",
           use_filename: true,
           unique_filename: false,
-          resource_type: "auto", // ✅ Supports images, PDFs, videos
+          resource_type: "auto",
         });
 
         receiptUrl = result.secure_url;
         console.log("✅ Upload Successful:", receiptUrl);
-
-        // ✅ Delete Local File After Upload
-        fs.unlinkSync(req.file.path);
+        fs.unlinkSync(req.file.path); // ✅ Delete local file after upload
       } catch (uploadError) {
         console.error("❌ Cloudinary Upload Error:", uploadError);
         return res.status(500).json({ message: "Failed to upload receipt.", error: uploadError.message });
       }
-    } else {
-      console.log("❌ No File Found in Request.");
-      return res.status(400).json({ message: "Receipt file is required." });
+    }
+
+    // ✅ Handle Withdrawals (Check Wallet Balance)
+    if (type === "withdrawal") {
+      if (user.walletBalance < amount) {
+        return res.status(400).json({ message: "Insufficient balance for withdrawal." });
+      }
+
+      // Deduct balance temporarily until approved
+      user.walletBalance -= amount;
+      await user.save();
     }
 
     // ✅ Create Transaction
@@ -89,8 +103,9 @@ export const addFundsRequest = async (req, res) => {
       user: userId,
       amount,
       transactionId,
-      receiptUrl, // Save Cloudinary URL
-      status: "pending",
+      receiptUrl, // Only applies for deposits
+      status: "pending", // Withdrawals need approval
+      type, // Either "deposit" or "withdrawal"
     });
 
     await transaction.save();
@@ -99,12 +114,16 @@ export const addFundsRequest = async (req, res) => {
     user.transactions.push(transaction._id);
     await user.save();
 
-    res.status(201).json({ message: "Fund request submitted successfully.", transaction });
+    res.status(201).json({
+      message: `${type === "deposit" ? "Fund request" : "Withdrawal request"} submitted successfully.`,
+      transaction,
+    });
   } catch (error) {
-    console.error("❌ Error adding funds:", error);
-    res.status(500).json({ message: "Server error while submitting fund request.", error: error.message });
+    console.error("❌ Error processing fund request:", error);
+    res.status(500).json({ message: "Server error while processing fund request.", error: error.message });
   }
 };
+
 
 // ✅ Get Wallet Balance
 export const getWalletBalance = async (req, res) => {
