@@ -1,5 +1,5 @@
 import express from 'express';
-import { addFundsRequest, getWalletBalance, getTransactions, verifyRequest, uploadReceipt } from '../controllers/walletController.js';
+import { handleFundRequest, getWalletBalance, getTransactions, verifyRequest, uploadReceipt } from '../controllers/walletController.js';
 import auth from '../middleware/auth.js'; // Authentication middleware
 
 const router = express.Router();
@@ -12,7 +12,7 @@ console.log("✅ Wallet Routes File Loaded");
  * @desc    Submit a request to add funds (now with receipt)
  * @access  Private
  */
-router.post('/add-funds', auth, uploadReceipt, addFundsRequest);
+router.post('/add-funds', auth, uploadReceipt, handleFundRequest);
 
 /**
  * @route   GET /api/wallet/balance
