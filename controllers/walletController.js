@@ -39,38 +39,34 @@ const fileFilter = (req, file, cb) => {
 export const upload = multer({ storage, fileFilter });
 export const uploadReceipt = upload.single("receipt");
 
-
-// ✅ Add Funds & Withdrawal Request
-export const handleFundRequest = async (req, res) => {
-  const { transactionId, amount, type } = req.body; // `type` determines deposit/withdrawal
+export const addFundsRequest = async (req, res) => {
+  const { transactionId, amount, type } = req.body;
   const userId = req.user;
 
-  if (!transactionId || !amount || amount <= 0 || !type) {
-    return res.status(400).json({ message: "Transaction ID, type, and amount are required." });
-  }
+  console.log("📢 Incoming Add Funds Request:", req.body); // ✅ Debug incoming request
 
-  if (!["deposit", "withdrawal"].includes(type)) {
-    return res.status(400).json({ message: "Invalid transaction type. Use 'deposit' or 'withdrawal'." });
+  if (!transactionId || !amount || amount <= 0 || !type) {
+    console.log("❌ Validation Error: Missing fields in request");
+    return res.status(400).json({
+      message: "Transaction ID, amount, and type (deposit/withdrawal) are required.",
+    });
   }
 
   try {
     // ✅ Check if user exists
     const user = await User.findById(userId);
     if (!user) {
+      console.log("❌ User not found:", userId);
       return res.status(404).json({ message: "User not found." });
     }
 
     let receiptUrl = null;
 
-    // ✅ Handle Deposits (Requires Receipt)
-    if (type === "deposit") {
-      if (!req.file) {
-        return res.status(400).json({ message: "Receipt file is required for deposits." });
-      }
-
+    if (req.file) {
       try {
         console.log("📢 Uploading File to Cloudinary:", req.file.path);
 
+        // ✅ Upload file to Cloudinary
         const result = await cloudinary.v2.uploader.upload(req.file.path, {
           folder: "wallet_receipts",
           use_filename: true,
@@ -79,23 +75,16 @@ export const handleFundRequest = async (req, res) => {
         });
 
         receiptUrl = result.secure_url;
-        console.log("✅ Upload Successful:", receiptUrl);
-        fs.unlinkSync(req.file.path); // ✅ Delete local file after upload
+        console.log("✅ Cloudinary Upload Successful:", receiptUrl);
+
+        // ✅ Delete Local File After Upload
+        fs.unlinkSync(req.file.path);
       } catch (uploadError) {
         console.error("❌ Cloudinary Upload Error:", uploadError);
         return res.status(500).json({ message: "Failed to upload receipt.", error: uploadError.message });
       }
-    }
-
-    // ✅ Handle Withdrawals (Check Wallet Balance)
-    if (type === "withdrawal") {
-      if (user.walletBalance < amount) {
-        return res.status(400).json({ message: "Insufficient balance for withdrawal." });
-      }
-
-      // Deduct balance temporarily until approved
-      user.walletBalance -= amount;
-      await user.save();
+    } else {
+      console.log("⚠ No File Found in Request.");
     }
 
     // ✅ Create Transaction
@@ -103,9 +92,9 @@ export const handleFundRequest = async (req, res) => {
       user: userId,
       amount,
       transactionId,
-      receiptUrl, // Only applies for deposits
-      status: "pending", // Withdrawals need approval
-      type, // Either "deposit" or "withdrawal"
+      type, // ✅ Deposit or Withdrawal
+      receiptUrl,
+      status: "pending",
     });
 
     await transaction.save();
@@ -114,16 +103,12 @@ export const handleFundRequest = async (req, res) => {
     user.transactions.push(transaction._id);
     await user.save();
 
-    res.status(201).json({
-      message: `${type === "deposit" ? "Fund request" : "Withdrawal request"} submitted successfully.`,
-      transaction,
-    });
+    res.status(201).json({ message: "Fund request submitted successfully.", transaction });
   } catch (error) {
-    console.error("❌ Error processing fund request:", error);
-    res.status(500).json({ message: "Server error while processing fund request.", error: error.message });
+    console.error("❌ Error adding funds:", error);
+    res.status(500).json({ message: "Server error while submitting fund request.", error: error.message });
   }
 };
-
 
 // ✅ Get Wallet Balance
 export const getWalletBalance = async (req, res) => {
