@@ -133,7 +133,7 @@ export const getTransactions = async (req, res) => {
   }
 };
 
-// ✅ Verify Transaction
+// ✅ Verify Transaction (Handles Deposit & Withdrawal)
 export const verifyRequest = async (req, res) => {
   const { transactionId, status } = req.body;
 
@@ -142,19 +142,39 @@ export const verifyRequest = async (req, res) => {
   }
 
   try {
+    console.log("📢 Incoming Verify Request:", { transactionId, status });
+
     // ✅ Find the transaction by ID
     const transaction = await Transaction.findOne({ transactionId });
     if (!transaction) {
+      console.log("❌ Transaction Not Found");
       return res.status(404).json({ message: 'Transaction not found.' });
     }
 
+    // ✅ Find User
+    const user = await User.findById(transaction.user);
+    if (!user) {
+      console.log("❌ User Not Found for Transaction:", transactionId);
+      return res.status(404).json({ message: 'User associated with the transaction not found.' });
+    }
+
+    console.log("✅ User Found:", user.email);
+    console.log("💰 User Current Balance:", user.walletBalance);
+
     if (status === 'approved') {
-      // ✅ Approve and update user wallet balance
-      const user = await User.findById(transaction.user);
-      if (!user) {
-        return res.status(404).json({ message: 'User associated with the transaction not found.' });
+      if (transaction.type === 'deposit') {
+        // ✅ Deposit: Add to wallet balance
+        user.walletBalance += transaction.amount;
+        console.log(`💲 Depositing ${transaction.amount} to user wallet`);
+      } else if (transaction.type === 'withdrawal') {
+        // ✅ Withdrawal: Subtract from wallet balance (only if sufficient balance)
+        if (user.walletBalance < transaction.amount) {
+          console.log("❌ Insufficient Balance for Withdrawal");
+          return res.status(400).json({ message: "Insufficient balance for withdrawal." });
+        }
+        user.walletBalance -= transaction.amount;
+        console.log(`💲 Withdrawing ${transaction.amount} from user wallet`);
       }
-      user.walletBalance += transaction.amount;
       await user.save();
     }
 
@@ -163,12 +183,14 @@ export const verifyRequest = async (req, res) => {
     transaction.isSuccessful = status === 'approved';
     await transaction.save();
 
+    console.log(`✅ Transaction ${status.toUpperCase()} Successfully!`);
     res.status(200).json({
       message: `Transaction ${status} successfully.`,
       transaction,
     });
   } catch (error) {
-    console.error('Error verifying transaction:', error.message);
-    res.status(500).json({ message: 'Server error while verifying the transaction.' });
+    console.error('❌ Error verifying transaction:', error);
+    res.status(500).json({ message: 'Server error while verifying the transaction.', error: error.message });
   }
 };
+
