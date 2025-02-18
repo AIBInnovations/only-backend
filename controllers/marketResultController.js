@@ -3,7 +3,7 @@ import moment from "moment-timezone"; // Import moment-timezone
 
 export const storeMarketResult = async (market, date, openResult, closeResult) => {
   try {
-    console.log("📢 Storing Market Result for:", market.name, date);
+    console.log("📢 Storing Market Result for:", market.name, istDate);
 
     const openDigits = openResult.split("").map(Number);
     const closeDigits = closeResult.split("").map(Number);
