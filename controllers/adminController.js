@@ -5,6 +5,8 @@ import Transaction from '../models/transactionModel.js';
 import Admin from '../models/adminModel.js'; // Ensure the path is correct
 import WinningRatio from '../models/winningRatioModel.js';
 import PlatformSettings from "../models/platformSettingsModel.js";
+import MarketResult from '../models/marketResultModel.js';
+import { storeMarketResult } from './marketResultController.js';
 import cloudinary from "cloudinary";
 import multer from 'multer';
 import dotenv from "dotenv";
@@ -311,6 +313,15 @@ export const declareResult = async (req, res) => {
       await bet.save();
     }
 
+    try {
+      // ✅ Call the new function to store market results
+      storeMarketResult(market, new Date(), openResult, closeResult);
+      console.log("✅ Markets Results Stored Successfully")
+    }
+    catch {
+      console.error("❌ Markets Results Stored Successfully")
+    }
+
     res.status(200).json({
       message: 'Results declared and rewards distributed successfully!',
       market: updatedMarket,
@@ -333,6 +344,37 @@ const isTriplePanna = (number) => {
   const [a, b, c] = number.split('');
   return a === b && b === c;
 };
+
+
+export const getMarketResults = async (req, res) => {
+  try {
+    const { marketId } = req.params; // Extract marketId from URL
+
+    if (!marketId) {
+      return res.status(400).json({ message: "Market ID is required." });
+    }
+
+    console.log("📢 Fetching results for Market ID:", marketId);
+
+    const results = await MarketResult.find({ marketId }).sort({ date: -1 });
+
+    if (!results.length) {
+      console.warn("⚠️ No results found for market:", marketId);
+      return res.status(404).json({ message: "No results found for this market." });
+    }
+
+    console.log("✅ Results found:", results.length);
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("❌ Error fetching market results:", error);
+    res.status(500).json({
+      message: "Server error while fetching market results.",
+      error: error.message,
+    });
+  }
+};
+
+
 
 /**
  * @desc Fetch all admins
