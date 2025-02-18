@@ -1,5 +1,7 @@
 import express from 'express';
 import Market from '../models/marketModel.js';
+import { getMarketResults } from '../controllers/marketController.js';
+import auth from '../middleware/auth.js'
 
 const router = express.Router();
 
@@ -31,4 +33,12 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/admin/markets/get-results/:marketId
+ * @desc    Fetch all results for a market
+ * @access  Admin
+ */
+router.get("/get-results/:marketId", auth, getMarketResults);
+
 export default router;
+

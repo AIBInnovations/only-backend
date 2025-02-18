@@ -1,4 +1,5 @@
 import Market from '../models/marketModel.js';
+import MarketResult from '../models/marketResultModel.js'
 
 // Fetch all markets
 export const getAllMarkets = async (req, res) => {
@@ -38,3 +39,31 @@ export const updateMarketStatus = async (req, res) => {
   }
 };
 
+
+export const getMarketResults = async (req, res) => {
+  try {
+    const { marketId } = req.params; // Extract marketId from URL
+
+    if (!marketId) {
+      return res.status(400).json({ message: "Market ID is required." });
+    }
+
+    console.log("📢 Fetching results for Market ID:", marketId);
+
+    const results = await MarketResult.find({ marketId }).sort({ date: -1 });
+
+    if (!results.length) {
+      console.warn("⚠️ No results found for market:", marketId);
+      return res.status(404).json({ message: "No results found for this market." });
+    }
+
+    console.log("✅ Results found:", results.length);
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("❌ Error fetching market results:", error);
+    res.status(500).json({
+      message: "Server error while fetching market results.",
+      error: error.message,
+    });
+  }
+};

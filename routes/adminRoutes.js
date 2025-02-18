@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser, getAllWinningRatios, updateWinningRatio, updatePlatformSettings, getPlatformSettings, getMarketResults} from '../controllers/adminController.js';
+import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser, getAllWinningRatios, updateWinningRatio, updatePlatformSettings, getPlatformSettings} from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails } from '../controllers/userController.js';
 const router = express.Router();
@@ -47,13 +47,6 @@ router.post('/add-market', adminAuth, addMarket);
  * @access  Admin
  */
 router.post('/markets/declare-results', adminAuth, declareResult);
-
-/**
- * @route   GET /api/admin/markets/get-results/:marketId
- * @desc    Fetch all results for a market
- * @access  Admin
- */
-router.get("/markets/get-results/:marketId", adminAuth, getMarketResults);
 
 /**
  * @route   GET /api/admin/admins
