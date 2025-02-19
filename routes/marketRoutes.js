@@ -40,5 +40,31 @@ router.get('/', async (req, res) => {
  */
 router.get("/get-results/:marketId", auth, getMarketResults);
 
+/**
+ * @route   GET /api/markets/get-market-id/:marketName
+ * @desc    Fetch Market ID using Market Name
+ * @access  Public
+ */
+router.get("/get-market-id/:marketName", async (req, res) => {
+  try {
+    const { marketName } = req.params;
+
+    if (!marketName) {
+      return res.status(400).json({ message: "Market name is required." });
+    }
+
+    const market = await Market.findOne({ name: marketName });
+
+    if (!market) {
+      return res.status(404).json({ message: "Market not found." });
+    }
+
+    res.status(200).json({ marketId: market.marketId });
+  } catch (error) {
+    console.error("❌ Error fetching market ID:", error);
+    res.status(500).json({ message: "Server error while fetching market ID." });
+  }
+});
+
 export default router;
 
