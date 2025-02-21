@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser, getAllWinningRatios, updateWinningRatio, updatePlatformSettings, getPlatformSettings} from '../controllers/adminController.js';
+import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser, getAllWinningRatios, updateWinningRatio, updatePlatformSettings, getPlatformSettings, addUser} from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails } from '../controllers/userController.js';
 const router = express.Router();
@@ -106,5 +106,11 @@ const upload = multer({ storage }).fields([
 // ✅ API to Update Platform Settings (Allows Individual Field Updates)
 router.put('/platform-settings', adminAuth, upload, updatePlatformSettings);
 
+/**
+ * @route   POST /api/admin/users/add
+ * @desc    Add a new user (Admin Only)
+ * @access  Admin
+ */
+router.post("/users/add", adminAuth, addUser);
 
 export default router;

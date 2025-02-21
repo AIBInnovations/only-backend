@@ -16,11 +16,8 @@ mongoose.connect(process.env.MONGO_URI, {
 
 const seedWinningRatios = async () => {
   const ratios = [
-    { gameName: 'Single Digit', ratio: 9 },
-    { gameName: 'Double Digit', ratio: 90 },
-    { gameName: 'Single Panna', ratio: 90 },
-    { gameName: 'Double Panna', ratio: 180 },
-    { gameName: 'Triple Panna', ratio: 270 },
+    { gameName: "Half Sangam", ratio: 1400 },
+    { gameName: "Full Sangam", ratio: 10000 }
   ];
 
   try {
