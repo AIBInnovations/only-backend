@@ -21,21 +21,29 @@ export const getOpenMarkets = async (req, res) => {
   }
 };
 
-// Update market status
+// ✅ Update market status properly
 export const updateMarketStatus = async (req, res) => {
-  const { marketId, isBettingOpen, openBetting } = req.body;
   try {
+    const { marketId } = req.params;
+    const { isBettingOpen, openBetting } = req.body;
+
+    console.log("📢 Updating market:", marketId, "isBettingOpen:", isBettingOpen, "openBetting:", openBetting);
+
     const market = await Market.findOneAndUpdate(
       { marketId },
-      { $set: { isBettingOpen: isBettingOpen, openBetting: openBetting } },
+      { $set: { isBettingOpen, openBetting } }, // ✅ Correct update syntax
       { new: true }
     );
+
     if (!market) {
-      return res.status(404).json({ message: 'Market not found' });
+      return res.status(404).json({ message: '❌ Market not found' });
     }
-    res.status(200).json({ message: 'Market status updated', market });
+
+    console.log("✅ Market Updated Successfully:", market);
+    res.status(200).json({ message: '✅ Market status updated successfully', market });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("❌ Error updating market status:", error);
+    res.status(500).json({ message: "❌ Server error updating market status", error: error.message });
   }
 };
 
