@@ -27,8 +27,7 @@ export const updateMarketStatus = async (req, res) => {
   try {
     const market = await Market.findOneAndUpdate(
       { marketId },
-      { isBettingOpen },
-      { openBetting },
+      { $set: { isBettingOpen: isBettingOpen, openBetting: openBetting } },
       { new: true }
     );
     if (!market) {
