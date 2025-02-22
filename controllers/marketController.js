@@ -23,11 +23,12 @@ export const getOpenMarkets = async (req, res) => {
 
 // Update market status
 export const updateMarketStatus = async (req, res) => {
-  const { marketId, isBettingOpen } = req.body;
+  const { marketId, isBettingOpen, openBetting } = req.body;
   try {
     const market = await Market.findOneAndUpdate(
       { marketId },
       { isBettingOpen },
+      { openBetting },
       { new: true }
     );
     if (!market) {
