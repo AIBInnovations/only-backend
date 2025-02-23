@@ -21,38 +21,37 @@ export const getOpenMarkets = async (req, res) => {
   }
 };
 
+// ✅ Update Market Status Properly
 export const updateMarketStatus = async (req, res) => {
   try {
     const { marketId } = req.params;
-    const { isBettingOpen, openBetting } = req.body;
+    const { isBettingOpen } = req.body; // Remove openBetting from request
 
-    console.log("📢 Updating market:", marketId, "isBettingOpen:", isBettingOpen, "openBetting:", openBetting);
+    console.log("📢 Updating market:", marketId, "isBettingOpen:", isBettingOpen);
 
-    // Ensure the query matches how the ID is stored
     const market = await Market.findOneAndUpdate(
-      { marketId: marketId }, // 🔥 Ensure `marketId` is correctly used
+      { marketId },
       { 
         $set: { 
-          isBettingOpen: isBettingOpen, // ✅ Ensure isBettingOpen updates
-          openBetting: openBetting // ✅ Ensure openBetting updates
+          isBettingOpen: isBettingOpen, // ✅ Update isBettingOpen
+          openBetting: isBettingOpen    // ✅ Ensure openBetting always matches isBettingOpen
         } 
       },
       { new: true } // ✅ Return the updated document
     );
 
     if (!market) {
-      console.log("❌ Market not found:", marketId);
       return res.status(404).json({ message: '❌ Market not found' });
     }
 
     console.log("✅ Market Updated Successfully:", market);
     res.status(200).json({ message: '✅ Market status updated successfully', market });
-
   } catch (error) {
     console.error("❌ Error updating market status:", error);
     res.status(500).json({ message: "❌ Server error updating market status", error: error.message });
   }
 };
+
 
 
 export const getMarketResults = async (req, res) => {
