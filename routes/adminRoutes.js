@@ -3,6 +3,7 @@ import multer from 'multer';
 import { getUsers, editBet, addMarket, declareResult, getAdmins, getAllTransactions, getAllBets, editMarket, deleteMarket, deleteBet, deleteUser, getAllWinningRatios, updateWinningRatio, updatePlatformSettings, getPlatformSettings, addUser} from '../controllers/adminController.js';
 import adminAuth from '../middleware/adminAuth.js'; // Middleware for admin authentication
 import { updateUserDetails } from '../controllers/userController.js';
+import { updateMarketStatus } from '../controllers/marketController.js';
 const router = express.Router();
 
 /**
@@ -78,7 +79,7 @@ router.put('/winning-ratios/:id', adminAuth, updateWinningRatio);
  * @desc    Edit a market
  * @access  Admin
  */
-router.put('/markets/:marketId', adminAuth, editMarket);
+router.put('/markets/:marketId', adminAuth, updateMarketStatus);
 
 // Delete a market
 router.delete('/markets/:marketId', adminAuth, deleteMarket);

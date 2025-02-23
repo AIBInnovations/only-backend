@@ -1,75 +1,71 @@
-import cron from 'node-cron';
-import Market from '../models/marketModel.js';
-import moment from 'moment-timezone';
+import mongoose from "mongoose";
+import cron from "node-cron";
+import moment from "moment";
+import connectDB from "../config/db.js";
 
-const manageMarketTimings = () => {
-  console.log('🔄 Cron job started to manage market timings.');
+// Connect to MongoDB
+await connectDB();
 
-  cron.schedule('* * * * *', async () => { // Run every minute
-    try {
-      const now = moment().tz("Asia/Kolkata");
-      const currentTime = now.format('HH:mm');
+// Define Market Schema (Only if not already defined)
+const marketSchema = new mongoose.Schema({
+  openTime: String, // Stored as "10:00 AM"
+  closeTime: String, // Stored as "06:00 PM"
+  openBetting: Boolean,
+  isBettingOpen: Boolean,
+});
 
-      console.log(`🕒 Checking markets at ${currentTime}`);
+// Prevent overwriting the model
+const Market = mongoose.models.Market || mongoose.model("Market", marketSchema);
 
-      // Fetch all markets
-      const markets = await Market.find();
-      if (!markets.length) {
-        console.log("❌ No markets found.");
-        return;
-      }
+// Function to schedule market updates
+export const scheduleMarketTasks = async () => {
+  console.log(`[${moment().format("YYYY-MM-DD hh:mm A")}] Fetching market timings...`);
 
-      for (const market of markets) {
-        const { openTime, closeTime, isBettingOpen, openBetting } = market;
+  try {
+    const markets = await Market.find({});
+    console.log("Markets Found:", markets); // Debugging log
 
-        const openTimeMoment = moment(openTime, "HH:mm");
-        const closeTimeMoment = moment(closeTime, "HH:mm");
-        const tenMinutesBeforeOpen = openTimeMoment.clone().subtract(10, 'minutes').format('HH:mm');
-        const tenMinutesBeforeClose = closeTimeMoment.clone().subtract(10, 'minutes').format('HH:mm');
-
-        // 🔹 **Fix wrongly open markets (Markets open at wrong time should be forcefully closed)**
-        if (isBettingOpen && (currentTime < openTime || currentTime > closeTime)) {
-          market.isBettingOpen = false;
-          market.openBetting = false;
-          await market.save();
-          console.log(`❌ Auto-Corrected: Market "${market.name}" was wrongly open and has been CLOSED.`);
-        }
-
-        // 1️⃣ **Open the market at `openTime`**
-        if (currentTime === openTime && !isBettingOpen) {
-          market.isBettingOpen = true;
-          market.openBetting = true;
-          await market.save();
-          console.log(`✅ Market "${market.name}" is now OPEN for betting.`);
-        }
-
-        // 2️⃣ **Restrict open bets 10 minutes before `openTime`**
-        if (currentTime === tenMinutesBeforeOpen && isBettingOpen && openBetting) {
-          market.openBetting = false; // Open bets closed, but close bets allowed
-          await market.save();
-          console.log(`⛔ Open betting for "${market.name}" is now CLOSED. Close bets are still allowed.`);
-        }
-
-        // 3️⃣ **Close all betting 10 minutes before `closeTime`**
-        if (currentTime === tenMinutesBeforeClose && isBettingOpen) {
-          market.isBettingOpen = false; // No more bets allowed
-          market.openBetting = false;
-          await market.save();
-          console.log(`⛔ Market "${market.name}" has STOPPED accepting bets.`);
-        }
-
-        // 4️⃣ **Fully close the market at `closeTime`**
-        if (currentTime === closeTime && isBettingOpen) {
-          market.isBettingOpen = false;
-          market.openBetting = false;
-          await market.save();
-          console.log(`❌ Market "${market.name}" is now FULLY CLOSED.`);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error in managing market timings:', error);
+    if (markets.length === 0) {
+      console.log("❌ No markets found in the database.");
+      return;
     }
-  });
+
+    const now = moment();
+
+    markets.forEach((market) => {
+      console.log(`Processing Market ID: ${market._id}, Open: ${market.openTime}, Close: ${market.closeTime}`);
+
+      const openTime = moment(market.openTime, "hh:mm A");
+      const closeTime = moment(market.closeTime, "hh:mm A");
+
+      const openDelay = openTime.diff(now) - 10 * 60 * 1000;
+      const closeDelay = closeTime.diff(now) - 10 * 60 * 1000;
+
+      console.log(`Market ${market._id} - openDelay: ${openDelay / 1000}s, closeDelay: ${closeDelay / 1000}s`);
+
+      if (openDelay > 0) {
+        console.log(`Market ${market._id} - openBetting will be closed at ${openTime.format("hh:mm A")}.`);
+        setTimeout(async () => {
+          await Market.updateOne({ _id: market._id }, { openBetting: false });
+          console.log(`[${moment().format("hh:mm A")}] Market ${market._id}: openBetting closed.`);
+        }, openDelay);
+      }
+
+      if (closeDelay > 0) {
+        console.log(`Market ${market._id} - isBettingOpen will be closed at ${closeTime.format("hh:mm A")}.`);
+        setTimeout(async () => {
+          await Market.updateOne({ _id: market._id }, { isBettingOpen: false });
+          console.log(`[${moment().format("hh:mm A")}] Market ${market._id}: isBettingOpen closed.`);
+        }, closeDelay);
+      }
+    });
+
+  } catch (error) {
+    console.error("❌ Error fetching market data:", error);
+  }
 };
 
-export default manageMarketTimings;
+// Run the cron job at 4 AM daily
+cron.schedule("0 4 * * *", scheduleMarketTasks);
+
+console.log("Market Scheduler started! Running daily at 4 AM.");
