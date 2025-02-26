@@ -95,7 +95,7 @@ router.delete('/users/:userId', adminAuth, deleteUser);
  * @desc    Fetch current platform settings
  * @access  Admin Only
  */
-router.get('/platform-settings', adminAuth, getPlatformSettings);
+router.get('/platform-settings', getPlatformSettings);
 
 // ✅ Multer Middleware for File Uploads
 const storage = multer.memoryStorage();
