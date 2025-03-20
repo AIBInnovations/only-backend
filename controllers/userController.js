@@ -93,6 +93,8 @@ export const forgotPassword = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
@@ -108,14 +110,17 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // Set the new password (no manual hashing - will be handled by pre-save hook)
+    // Set the new password
     user.password = newPassword;
+    
+    // Explicitly mark the password field as modified so the pre-save hook will detect it
+    user.markModified('password');
 
     // Clear the reset token fields
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
-    // Save the user - this should trigger the pre-save hook that hashes the password
+    // Save the user - this will trigger the pre-save hook
     await user.save();
 
     return res.json({ message: "Password reset successful" });
