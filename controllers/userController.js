@@ -108,14 +108,19 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // Set the new password. This will mark the field as modified.
-    user.password = newPassword;
+    // Hash the password before saving
+    const bcrypt = require('bcrypt');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    // Set the hashed password
+    user.password = hashedPassword;
 
     // Clear the reset token fields
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
-    // Save normally so that pre-save hooks (including password hashing) are triggered.
+    // Save the user (without triggering pre-save hooks for password to avoid double hashing)
     await user.save();
 
     return res.json({ message: "Password reset successful" });
