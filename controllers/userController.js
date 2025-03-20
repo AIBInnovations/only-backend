@@ -98,32 +98,31 @@ export const resetPassword = async (req, res) => {
     const { token } = req.params;
     const { newPassword } = req.body;
 
-    // ✅ Find user with valid reset token
+    // Find the user with the valid reset token and ensure the token is not expired
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }, // Ensure token is not expired
+      resetPasswordExpires: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // ✅ Assign new password (let pre-save middleware handle hashing)
+    // Set the new password. This will mark the field as modified.
     user.password = newPassword;
 
-    // ✅ Clear reset token fields
+    // Clear the reset token fields
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
-    // ✅ Save user without triggering pre-save hook (to avoid double hashing)
-    await user.save({ validateBeforeSave: false });
+    // Save normally so that pre-save hooks (including password hashing) are triggered.
+    await user.save();
 
-    return res.json({ message: "Password reset successful" }); // Ensure only one response
+    return res.json({ message: "Password reset successful" });
   } catch (error) {
     console.error("Error resetting password:", error);
-
     if (!res.headersSent) {
-      return res.status(500).json({ error: "Server error" }); // Avoid sending response twice
+      return res.status(500).json({ error: "Server error" });
     }
   }
 };
