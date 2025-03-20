@@ -2,6 +2,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import bcrypt from 'bcrypt';
 
 // Update user details, including wallet balance
 export const updateUserDetails = async (req, res) => {
@@ -92,7 +93,6 @@ export const forgotPassword = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
@@ -108,19 +108,14 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // Hash the password before saving
-    const bcrypt = require('bcrypt');
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-    
-    // Set the hashed password
-    user.password = hashedPassword;
+    // Set the new password (no manual hashing - will be handled by pre-save hook)
+    user.password = newPassword;
 
     // Clear the reset token fields
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
-    // Save the user (without triggering pre-save hooks for password to avoid double hashing)
+    // Save the user - this should trigger the pre-save hook that hashes the password
     await user.save();
 
     return res.json({ message: "Password reset successful" });
