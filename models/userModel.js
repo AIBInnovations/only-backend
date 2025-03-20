@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       match: [/^\d{10}$/, 'Please provide a valid 10-digit phone number'],
-    }, // Added validation
+    },
     walletBalance: { type: Number, default: 0 },
     transactions: [
       {
@@ -38,6 +38,9 @@ const userSchema = new mongoose.Schema(
         ref: 'Win',
       },
     ],
+    // Fields for password reset functionality
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );
