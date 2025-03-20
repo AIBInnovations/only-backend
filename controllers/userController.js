@@ -1,4 +1,7 @@
-import User from '../models/userModel.js';
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import User from "../models/userModel.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 // Update user details, including wallet balance
 export const updateUserDetails = async (req, res) => {
@@ -57,5 +60,70 @@ export const getUserProfile = async (req, res) => {
   } catch (error) {
     console.error('Error fetching user profile:', error.message);
     res.status(500).json({ message: 'Server error while fetching user profile.' });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // ✅ Find user by email
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // ✅ Generate reset token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiry
+
+    await user.save();
+
+    // ✅ Send reset email
+    // In your forgotPassword controller
+    const resetUrl = `https://matka-betting-consumer-hazel.vercel.app/reset-password/${resetToken}`;
+
+    const message = `Click the link to reset your password: ${resetUrl}`;
+
+    await sendEmail(user.email, "Password Reset", message);
+
+    res.json({ message: "Password reset email sent" });
+  } catch (error) {
+    console.error("Error in forgot password:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+
+    // ✅ Find user with valid reset token
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }, // Ensure token is not expired
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    // ✅ Assign new password (let pre-save middleware handle hashing)
+    user.password = newPassword;
+
+    // ✅ Clear reset token fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    // ✅ Save user without triggering pre-save hook (to avoid double hashing)
+    await user.save({ validateBeforeSave: false });
+
+    return res.json({ message: "Password reset successful" }); // Ensure only one response
+  } catch (error) {
+    console.error("Error resetting password:", error);
+
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Server error" }); // Avoid sending response twice
+    }
   }
 };
