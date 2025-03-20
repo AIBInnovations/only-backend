@@ -33,6 +33,7 @@ const allowedOrigins = [
     "https://matka-betting-admin.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
+    "http://admin-kappa-snowy.vercel.app",
 ];
 
 const corsOptions = {
