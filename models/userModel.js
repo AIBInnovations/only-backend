@@ -14,6 +14,9 @@ const userSchema = new mongoose.Schema(
       ],
     },
     password: { type: String, required: true },
+    // Fields for password reset functionality
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
     phoneNumber: {
       type: String,
       required: true,
@@ -38,9 +41,7 @@ const userSchema = new mongoose.Schema(
         ref: 'Win',
       },
     ],
-    // Fields for password reset functionality
-    resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },
+
   },
   { timestamps: true }
 );
@@ -57,10 +58,15 @@ userSchema.pre('save', async function (next) {
   }
 });
 
+
+
+
 // Instance method to verify password
 userSchema.methods.verifyPassword = async function (password) {
-  return bcrypt.compare(password, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
+
+
 
 // Remove password field from JSON responses
 userSchema.set('toJSON', {
