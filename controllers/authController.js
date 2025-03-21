@@ -120,3 +120,5 @@ export const getUserDetails = async (req, res) => {
     res.status(500).json({ error: 'An unexpected error occurred while fetching user details.' });
   }
 };
+
+
